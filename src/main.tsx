@@ -35,6 +35,7 @@ type WebData = typeof webData;
 type ViewKey = "home" | "workbench" | "simulation" | "evidence" | "experiment" | "reproduce";
 
 const data = webData as WebData;
+const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
 
 const navItems: Array<{ id: ViewKey; label: string; icon: React.ElementType }> = [
   { id: "home", label: "主控台", icon: Home },
@@ -382,7 +383,7 @@ function SimulationView() {
           <ChartSpline size={18} />
           <h3>参数化 PINN 高保真滑块</h3>
         </div>
-        <iframe title="Parametric PINN slider" src="/interactive/param_slider.html" />
+        <iframe title="Parametric PINN slider" src={assetPath("interactive/param_slider.html")} />
       </div>
     </ViewFrame>
   );
@@ -501,7 +502,7 @@ function EvidenceView() {
             径向补测显示，手动 Y 导轨定位误差会被场梯度放大。因此轴线外结果定位为结构性可视化，
             轴线数据承担定量验证。
           </p>
-          <ImgPanel src="/assets/radial_op1.jpg" alt="径向补测过程" label="径向补测用于识别设备边界" />
+          <ImgPanel src={assetPath("assets/radial_op1.jpg")} alt="径向补测过程" label="径向补测用于识别设备边界" />
         </div>
       </div>
     </ViewFrame>
@@ -523,7 +524,7 @@ function ExperimentView() {
     <ViewFrame eyebrow="Data Archive" title="实验仪器与轴线数据档案">
       <div className="experiment-grid module-surface">
         <ImgPanel
-          src="/assets/device_photo.jpg"
+          src={assetPath("assets/device_photo.jpg")}
           alt="亥姆霍兹线圈实验装置实拍"
           label="DH4501N 三维亥姆霍兹线圈磁场实验仪"
         />
@@ -615,7 +616,7 @@ function ReproduceView() {
     <ViewFrame eyebrow="Reproducibility" title="复现流水线与图像材料">
       <div className="section-title inline-title">
         <span />
-        <a className="ghost-link" href="/assets/param_animation.gif" target="_blank" rel="noreferrer">
+        <a className="ghost-link" href={assetPath("assets/param_animation.gif")} target="_blank" rel="noreferrer">
           <Download size={16} />
           查看扫描 GIF
         </a>
@@ -631,17 +632,17 @@ function ReproduceView() {
       </div>
       <div className="gallery-grid">
         <ImgPanel
-          src="/assets/autodiff_axis_3dfield.png"
+          src={assetPath("assets/autodiff_axis_3dfield.png")}
           alt="自动微分、轴线磁场约束与三维场学习流程"
           label="自动微分、轴线磁场约束与三维场学习"
         />
         <ImgPanel
-          src="/assets/param_valid.png"
+          src={assetPath("assets/param_valid.png")}
           alt="参数化 PINN 验证"
           label="d=R/2 与 d=2R 训练，d=R 未见验证"
         />
         <ImgPanel
-          src="/assets/helm3d_persp.png"
+          src={assetPath("assets/helm3d_persp.png")}
           alt="三维磁场重建"
           label="三维场结构和磁力线展示"
         />
