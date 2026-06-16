@@ -104,7 +104,7 @@ function ImgPanel({
 }) {
   return (
     <figure className="image-panel">
-      <img src={src} alt={alt} loading="lazy" />
+      <img src={src} alt={alt} loading="eager" decoding="async" />
       <figcaption>{label}</figcaption>
     </figure>
   );
