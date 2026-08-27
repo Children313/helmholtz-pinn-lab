@@ -105,7 +105,7 @@ type QualityTone = "good" | "ok" | "warn" | "neutral";
 
 const labSteps = [
   { label: "数据采集", caption: "四路读数与标定" },
-  { label: "模型拟合", caption: "物理参数反演" },
+  { label: "基准拟合", caption: "BS 物理参数反演" },
   { label: "质量控制", caption: "残差与可信度" },
   { label: "场图报告", caption: "可视化与导出" },
 ];
@@ -267,7 +267,7 @@ function formatPercent(value: number | null | undefined) {
   return value === null || value === undefined ? "--" : `${value.toFixed(2)}%`;
 }
 
-export function StudentLab({ data }: { data: LabData }) {
+export function StudentLab({ data, onProceedToTraining }: { data: LabData; onProceedToTraining: () => void }) {
   const samples: Sample[] = React.useMemo(
     () => [
       {
@@ -965,7 +965,7 @@ export function StudentLab({ data }: { data: LabData }) {
         <div className="lab-hero-copy">
           <p>Guided Experiment</p>
           <h1>亥姆霍兹线圈 PINN 磁场实验流程</h1>
-          <span>按科研实验链路推进：采集记录、模型拟合、质量控制、场图报告。</span>
+          <span>按科研实验链路推进：采集记录、基准拟合、质量控制、场图报告，再进入 PINN 训练。</span>
         </div>
         <div className="software-ribbon" aria-label="软件状态">
           <div>
@@ -1160,10 +1160,15 @@ export function StudentLab({ data }: { data: LabData }) {
         </button>
         <button
           type="button"
-          onClick={() => setActiveStep((step) => Math.min(labSteps.length - 1, step + 1))}
-          disabled={activeStep === labSteps.length - 1}
+          onClick={() => {
+            if (activeStep === labSteps.length - 1) {
+              onProceedToTraining();
+              return;
+            }
+            setActiveStep((step) => Math.min(labSteps.length - 1, step + 1));
+          }}
         >
-          下一步
+          {activeStep === labSteps.length - 1 ? "进入 PINN 训练" : "下一步"}
           <ArrowRight size={16} />
         </button>
       </div>

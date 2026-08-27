@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowRight,
   Atom,
+  BrainCircuit,
   BookOpen,
   Boxes,
   ChartSpline,
@@ -28,11 +29,12 @@ import { AxisChart } from "./components/AxisChart";
 import { FieldScene } from "./components/FieldScene";
 import { HeatmapCanvas } from "./components/HeatmapCanvas";
 import { StudentLab } from "./components/StudentLab";
+import { TrainingLab } from "./components/TrainingLab";
 import { makeAxisCurve } from "./lib/physics";
 import "./styles.css";
 
 type WebData = typeof webData;
-type ViewKey = "home" | "workbench" | "simulation" | "evidence" | "experiment" | "reproduce";
+type ViewKey = "home" | "workbench" | "training" | "simulation" | "evidence" | "experiment" | "reproduce";
 
 const data = webData as WebData;
 const embeddedAssets = (globalThis as typeof globalThis & { __HELMHOLTZ_ASSETS__?: Record<string, string> })
@@ -45,6 +47,7 @@ const assetPath = (path: string) => {
 const navItems: Array<{ id: ViewKey; label: string; icon: React.ElementType }> = [
   { id: "home", label: "主控台", icon: Home },
   { id: "workbench", label: "引导实验", icon: FlaskConical },
+  { id: "training", label: "PINN 训练", icon: BrainCircuit },
   { id: "simulation", label: "三维仿真", icon: SlidersHorizontal },
   { id: "evidence", label: "验证证据", icon: ShieldCheck },
   { id: "experiment", label: "数据档案", icon: Database },
@@ -205,6 +208,14 @@ function HomeView({ navigate }: { navigate: (view: ViewKey) => void }) {
           onOpen={() => navigate("workbench")}
         />
         <ModuleCard
+          icon={BrainCircuit}
+          eyebrow="Model training"
+          title="PINN 训练与模型固化"
+          body="审阅网络结构、物理损失、真实收敛日志、权重敏感性与最终检查点。"
+          meta="archived runs"
+          onOpen={() => navigate("training")}
+        />
+        <ModuleCard
           icon={Microscope}
           eyebrow="Field simulation"
           title="三维场结构与参数扫描"
@@ -250,6 +261,18 @@ function HomeView({ navigate }: { navigate: (view: ViewKey) => void }) {
         </button>
       </div>
     </section>
+  );
+}
+
+function TrainingView({ navigate }: { navigate: (view: ViewKey) => void }) {
+  return (
+    <ViewFrame eyebrow="PINN Training Module" title="物理约束建模、优化与模型固化">
+      <TrainingLab
+        training={data.training}
+        parametricLossImage={assetPath("assets/parametric_training_loss.png")}
+        onProceed={() => navigate("simulation")}
+      />
+    </ViewFrame>
   );
 }
 
@@ -704,7 +727,8 @@ function App() {
       </div>
 
       {view === "home" && <HomeView navigate={navigate} />}
-      {view === "workbench" && <StudentLab data={data} />}
+      {view === "workbench" && <StudentLab data={data} onProceedToTraining={() => navigate("training")} />}
+      {view === "training" && <TrainingView navigate={navigate} />}
       {view === "simulation" && <SimulationView />}
       {view === "evidence" && <EvidenceView />}
       {view === "experiment" && <ExperimentView />}

@@ -254,7 +254,7 @@ nav a:hover,
 
 .module-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 16px;
 }
@@ -2390,6 +2390,1079 @@ th:first-child {
   margin-top: auto;
 }
 
+.training-module {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.training-commandbar,
+.training-stage-track,
+.training-config-panel,
+.training-loss-panel,
+.training-runtime-panel,
+.architecture-panel,
+.sensitivity-panel,
+.conditioning-panel,
+.training-output-band {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.training-commandbar {
+  display: grid;
+  grid-template-columns: minmax(440px, 1fr) minmax(250px, 0.48fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.training-variant-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #dce5ee;
+  border-radius: 7px;
+  background: #f3f7fa;
+}
+
+.training-variant-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #4b5e73;
+  text-align: left;
+  cursor: pointer;
+}
+
+.training-variant-tabs button > span,
+.archive-run-status > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.training-variant-tabs strong,
+.archive-run-status strong {
+  color: inherit;
+  font-family: var(--font-medium);
+  font-size: 14px;
+}
+
+.training-variant-tabs em,
+.archive-run-status em {
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.3;
+}
+
+.training-variant-tabs button.active {
+  border-color: #9ec5dc;
+  background: #fff;
+  color: var(--blue);
+  box-shadow: 0 7px 18px rgba(15, 76, 129, 0.09);
+}
+
+.training-variant-tabs button.active svg {
+  color: var(--teal);
+}
+
+.archive-run-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 54px;
+  padding: 9px 11px;
+  border-left: 3px solid #059669;
+  background: #f1faf7;
+  color: #075e4b;
+}
+
+.archive-run-status svg {
+  flex: 0 0 auto;
+  color: #059669;
+}
+
+.training-command-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.training-command-actions button,
+.proceed-simulation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid #d5e0ea;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--blue);
+  font-family: var(--font-small);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.training-command-actions button.primary,
+.proceed-simulation {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.training-command-actions button:hover,
+.proceed-simulation:hover {
+  border-color: var(--teal);
+  background: #effaf9;
+  color: var(--blue);
+}
+
+.training-stage-track {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 9px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.045);
+}
+
+.training-stage-track > div {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 22px 1fr;
+  grid-template-areas:
+    "index icon label"
+    "index icon caption";
+  flex: 1 0 185px;
+  align-items: center;
+  gap: 2px 8px;
+  min-height: 62px;
+  padding: 9px 12px;
+  border-right: 1px solid #e3eaf1;
+  color: #718096;
+}
+
+.training-stage-track > div:last-child {
+  border-right: 0;
+}
+
+.training-stage-track .stage-index {
+  grid-area: index;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d9e3ec;
+  border-radius: 6px;
+  background: #f4f7fa;
+  color: #6a7c91;
+  font-family: var(--font-medium);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.training-stage-track svg {
+  grid-area: icon;
+}
+
+.training-stage-track strong {
+  grid-area: label;
+  font-family: var(--font-medium);
+  font-size: 13px;
+}
+
+.training-stage-track em {
+  grid-area: caption;
+  font-family: var(--font-small);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.training-stage-track > div.done,
+.training-stage-track > div.active {
+  color: var(--blue);
+}
+
+.training-stage-track > div.done .stage-index {
+  border-color: #aad4cb;
+  background: #eaf8f3;
+  color: #047857;
+}
+
+.training-stage-track > div.active {
+  background: #edf7fa;
+}
+
+.training-stage-track > div.active .stage-index {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.training-stage-track > div.active svg {
+  color: var(--teal);
+}
+
+.training-console-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.58fr) minmax(540px, 1.35fr) minmax(260px, 0.62fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.training-config-panel,
+.training-loss-panel,
+.training-runtime-panel,
+.architecture-panel,
+.sensitivity-panel,
+.conditioning-panel {
+  min-width: 0;
+  padding: 17px;
+}
+
+.training-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.training-panel-heading.split {
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.training-panel-heading svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--blue);
+}
+
+.training-panel-heading > div {
+  min-width: 0;
+}
+
+.training-panel-heading h2 {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.training-panel-heading p {
+  margin: 4px 0 0;
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.training-config-list {
+  display: grid;
+  gap: 0;
+  margin: 15px 0 0;
+}
+
+.training-config-list > div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid #e7edf3;
+}
+
+.training-config-list dt {
+  color: #74869a;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.training-config-list dd {
+  margin: 0;
+  color: #26384d;
+  font-family: var(--font-medium);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.runtime-environment {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 15px;
+  padding: 11px;
+  border-left: 3px solid var(--teal);
+  background: #f1f8fa;
+}
+
+.runtime-environment svg {
+  flex: 0 0 auto;
+  color: var(--teal);
+}
+
+.runtime-environment > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.runtime-environment strong,
+.runtime-environment span {
+  overflow-wrap: anywhere;
+}
+
+.runtime-environment strong {
+  color: #25435c;
+  font-family: var(--font-medium);
+  font-size: 11px;
+}
+
+.runtime-environment span {
+  color: #687c91;
+  font-family: var(--font-small);
+  font-size: 10px;
+}
+
+.loss-legend {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 11px;
+  color: #526579;
+  font-family: var(--font-small);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.loss-legend span::before {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  margin-right: 5px;
+  content: "";
+  vertical-align: middle;
+}
+
+.loss-legend .train::before {
+  background: var(--blue);
+}
+
+.loss-legend .test::before {
+  background: #e84c3d;
+}
+
+.training-loss-chart {
+  display: block;
+  width: 100%;
+  max-height: 390px;
+  margin-top: 10px;
+}
+
+.loss-plot-bg {
+  fill: #fbfdff;
+  stroke: #d9e3ec;
+}
+
+.loss-grid {
+  stroke: #dfe7ef;
+  stroke-width: 1;
+}
+
+.loss-grid.vertical {
+  stroke-dasharray: 3 4;
+}
+
+.loss-tick-label,
+.loss-axis-label,
+.optimizer-label {
+  fill: #66798e;
+  font-family: var(--font-small);
+  font-size: 10px;
+}
+
+.loss-axis-label {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.optimizer-divider {
+  stroke: #e49a25;
+  stroke-dasharray: 5 4;
+  stroke-width: 1.5;
+}
+
+.optimizer-label {
+  fill: #8a5a10;
+  font-weight: 900;
+}
+
+.loss-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.loss-line.train {
+  stroke: var(--blue);
+}
+
+.loss-line.test {
+  stroke: #e84c3d;
+  stroke-dasharray: 6 4;
+}
+
+.loss-current {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.loss-current.train {
+  fill: var(--blue);
+}
+
+.loss-current.test {
+  fill: #e84c3d;
+}
+
+.loss-components {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.loss-components > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 6px;
+  border-top: 2px solid #c4d7e5;
+  background: #f6f9fb;
+}
+
+.loss-components span {
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.loss-components strong {
+  color: #26384d;
+  font-family: var(--font-medium);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.parametric-loss-figure {
+  display: grid;
+  align-content: start;
+  min-height: 410px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #e1e8ef;
+  background: #f8fafc;
+}
+
+.parametric-loss-figure img {
+  display: block;
+  width: 100%;
+  height: 360px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.parametric-loss-figure p {
+  margin: 0;
+  padding: 10px 12px;
+  color: #66798e;
+  font-family: var(--font-small);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.run-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-family: var(--font-small);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.run-indicator span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.run-indicator.complete {
+  background: #eaf8f3;
+  color: #047857;
+}
+
+.run-indicator.running {
+  background: #edf6fb;
+  color: #0f6f9c;
+}
+
+.run-indicator.running span {
+  animation: training-pulse 900ms ease-in-out infinite alternate;
+}
+
+@keyframes training-pulse {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+.run-step-readout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "label label"
+    "value suffix";
+  align-items: baseline;
+  margin-top: 20px;
+}
+
+.run-step-readout span {
+  grid-area: label;
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 11px;
+}
+
+.run-step-readout strong {
+  grid-area: value;
+  color: var(--ink);
+  font-family: var(--font-medium);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.run-step-readout em {
+  grid-area: suffix;
+  color: #7b8da0;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.run-progress {
+  height: 7px;
+  margin-top: 11px;
+  overflow: hidden;
+  background: #e5ebf1;
+}
+
+.run-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--blue));
+  transition: width 320ms ease;
+}
+
+.run-phase {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 11px;
+  border-left: 3px solid var(--blue);
+  background: #f2f7fb;
+}
+
+.run-phase span,
+.run-loss-readouts span,
+.checkpoint-record span {
+  color: #6d7f93;
+  font-family: var(--font-small);
+  font-size: 10px;
+}
+
+.run-phase strong {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 13px;
+}
+
+.run-loss-readouts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.run-loss-readouts > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #e1e8ef;
+  background: #fbfdff;
+}
+
+.run-loss-readouts strong {
+  color: #26384d;
+  font-family: var(--font-medium);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.checkpoint-record {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #cfe4dc;
+  background: #f1faf7;
+}
+
+.checkpoint-record svg {
+  flex: 0 0 auto;
+  color: #047857;
+}
+
+.checkpoint-record > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.checkpoint-record strong {
+  color: #075e4b;
+  font-family: var(--font-medium);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.runtime-boundary {
+  margin: 12px 0 0;
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.training-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.architecture-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.architecture-strip > svg {
+  flex: 0 0 auto;
+  align-self: center;
+  color: #8da0b3;
+}
+
+.architecture-block {
+  display: grid;
+  flex: 1 0 112px;
+  align-content: center;
+  min-height: 98px;
+  padding: 11px;
+  border-top: 3px solid #9ebed4;
+  background: #f5f8fb;
+  text-align: center;
+}
+
+.architecture-block.encoding {
+  border-top-color: #e49a25;
+  background: #fff9ed;
+}
+
+.architecture-block.hidden {
+  border-top-color: var(--teal);
+  background: #f0f9f8;
+}
+
+.architecture-block.output {
+  border-top-color: #e84c3d;
+  background: #fff5f3;
+}
+
+.architecture-block span {
+  color: #718397;
+  font-family: var(--font-small);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.architecture-block strong {
+  margin-top: 5px;
+  color: var(--ink);
+  font-family: var(--font-medium);
+  font-size: 20px;
+}
+
+.architecture-block em {
+  margin-top: 5px;
+  color: #5f7287;
+  font-family: var(--font-small);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.physics-loss-equation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 13px;
+  padding: 12px;
+  border-left: 3px solid var(--blue);
+  background: #f2f7fb;
+}
+
+.physics-loss-equation svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.physics-loss-equation > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.physics-loss-equation strong {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.physics-loss-equation span {
+  color: #5f7287;
+  font-family: var(--font-small);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.evidence-tag {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid #acd6cc;
+  border-radius: 5px;
+  background: #edf9f6;
+  color: #047857;
+  font-family: var(--font-small);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.sensitivity-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.sensitivity-tabs button {
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 1px solid #d9e3ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #53667a;
+  font-family: var(--font-medium);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sensitivity-tabs button.active {
+  border-color: var(--blue);
+  background: #edf6fb;
+  color: var(--blue);
+}
+
+.sensitivity-tabs em {
+  margin-left: 5px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #dff4ec;
+  color: #047857;
+  font-family: var(--font-small);
+  font-size: 8px;
+  font-style: normal;
+}
+
+.sensitivity-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.sensitivity-metrics > div {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  min-height: 76px;
+  align-content: center;
+  padding: 9px;
+  border: 1px solid #e1e8ef;
+  background: #f8fafc;
+}
+
+.sensitivity-metrics span {
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 9px;
+}
+
+.sensitivity-metrics strong {
+  color: var(--ink);
+  font-family: var(--font-medium);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.ablation-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 11px;
+  padding: 11px;
+  border-left: 3px solid #e49a25;
+  background: #fff8ec;
+  color: #7a4b0b;
+}
+
+.ablation-note svg {
+  flex: 0 0 auto;
+}
+
+.ablation-note p {
+  margin: 0;
+  font-family: var(--font-small);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.conditioning-track {
+  position: relative;
+  height: 116px;
+  margin: 20px 24px 0;
+}
+
+.conditioning-line {
+  position: absolute;
+  top: 37px;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: #dce5ed;
+}
+
+.conditioning-point {
+  position: absolute;
+  top: 28px;
+  display: grid;
+  justify-items: center;
+  width: 44px;
+  margin-left: -22px;
+  color: #718397;
+}
+
+.conditioning-point > span {
+  width: 18px;
+  height: 18px;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 1px currentColor;
+}
+
+.conditioning-point strong {
+  margin-top: 7px;
+  font-family: var(--font-medium);
+  font-size: 10px;
+}
+
+.conditioning-point em {
+  margin-top: 2px;
+  font-family: var(--font-small);
+  font-size: 8px;
+  font-style: normal;
+}
+
+.conditioning-point.experiment {
+  color: var(--blue);
+}
+
+.conditioning-point.virtual {
+  color: #e49a25;
+}
+
+.conditioning-point.heldout {
+  color: #e84c3d;
+}
+
+.conditioning-point.heldout > span {
+  background: #fff;
+}
+
+.conditioning-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  color: #63758a;
+  font-family: var(--font-small);
+  font-size: 9px;
+}
+
+.conditioning-legend span::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.conditioning-legend .experiment { color: var(--blue); }
+.conditioning-legend .virtual { color: #c5780a; }
+.conditioning-legend .heldout { color: #d74637; }
+
+.feature-record {
+  display: grid;
+  gap: 5px;
+  margin-top: 16px;
+  padding: 11px;
+  border-left: 3px solid var(--teal);
+  background: #f0f9f8;
+}
+
+.feature-record span {
+  color: #0f766e;
+  font-family: var(--font-small);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.feature-record strong {
+  color: #25435c;
+  font-family: var(--font-medium);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.training-output-band {
+  display: grid;
+  grid-template-columns: minmax(330px, 1fr) minmax(420px, 0.95fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-top: 3px solid var(--teal);
+}
+
+.training-output-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.training-output-copy > svg {
+  flex: 0 0 auto;
+  color: #047857;
+}
+
+.training-output-copy > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.training-output-copy span {
+  color: #047857;
+  font-family: var(--font-small);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.training-output-copy strong {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.training-output-copy em {
+  color: #66798e;
+  font-family: var(--font-small);
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.training-output-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.training-output-metrics > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 8px 10px;
+  border-left: 2px solid #b7d2e2;
+  background: #f6f9fb;
+}
+
+.training-output-metrics span {
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 9px;
+}
+
+.training-output-metrics strong {
+  color: var(--ink);
+  font-family: var(--font-medium);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
 footer {
   display: flex;
   align-items: center;
@@ -2475,6 +3548,35 @@ footer {
 
   .scene-mount {
     min-height: 420px;
+  }
+
+  .training-commandbar {
+    grid-template-columns: 1fr;
+  }
+
+  .training-command-actions {
+    justify-content: flex-start;
+  }
+
+  .training-console-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .training-loss-panel {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .training-output-band {
+    grid-template-columns: 1fr;
+  }
+
+  .training-output-metrics {
+    max-width: 680px;
+  }
+
+  .proceed-simulation {
+    justify-self: start;
   }
 }
 
@@ -2619,5 +3721,93 @@ footer {
 
   .spec-panel dl {
     grid-template-columns: 1fr;
+  }
+
+  .training-variant-tabs,
+  .training-console-grid,
+  .training-analysis-grid,
+  .training-output-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-strip {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .architecture-strip > svg {
+    transform: rotate(90deg);
+  }
+
+  .architecture-block {
+    flex: none;
+    width: 100%;
+    min-height: 76px;
+  }
+
+  .training-command-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .training-command-actions button,
+  .proceed-simulation {
+    width: 100%;
+  }
+
+  .training-stage-track > div {
+    flex-basis: 168px;
+  }
+
+  .training-config-panel,
+  .training-loss-panel,
+  .training-runtime-panel,
+  .architecture-panel,
+  .sensitivity-panel,
+  .conditioning-panel {
+    padding: 14px;
+  }
+
+  .training-loss-chart {
+    min-width: 560px;
+  }
+
+  .training-loss-panel {
+    overflow-x: auto;
+  }
+
+  .loss-components,
+  .sensitivity-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sensitivity-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .conditioning-track {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .conditioning-point em {
+    display: none;
+  }
+
+  .conditioning-legend {
+    flex-wrap: wrap;
+  }
+
+  .parametric-loss-figure {
+    min-height: 0;
+  }
+
+  .parametric-loss-figure img {
+    height: auto;
+    max-height: 360px;
+  }
+
+  .proceed-simulation {
+    justify-self: stretch;
   }
 }
