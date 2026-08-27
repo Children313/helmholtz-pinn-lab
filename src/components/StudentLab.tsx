@@ -7,14 +7,19 @@ import {
   Calculator,
   CheckCircle2,
   Clipboard,
+  Database,
   Download,
-  Eraser,
   FileSpreadsheet,
   FlaskConical,
   Gauge,
+  Keyboard,
+  Plus,
   RefreshCw,
+  RotateCcw,
   Search,
+  Sigma,
   TableProperties,
+  Trash2,
 } from "lucide-react";
 import { AxisChart } from "./AxisChart";
 import { HeatmapCanvas } from "./HeatmapCanvas";
@@ -45,10 +50,21 @@ type LabData = {
     halfMeasured: number[];
     doubleMeasured: number[];
   };
+  voltage: {
+    helmholtz: {
+      xMm: number[];
+      v1Mv: number[];
+      v2Mv: number[];
+      v3Mv: number[];
+      v4Mv: number[];
+    };
+  };
 };
 
 type Sample = {
+  id: "helmholtz" | "half" | "double";
   label: string;
+  note: string;
   dRatio: number;
   values: number[];
 };
@@ -57,7 +73,23 @@ type ParseResult = {
   points: AxisPoint[];
   acceptedLines: number;
   ignoredLines: number;
+  incompleteRows: number;
+  pendingRows: number;
   duplicateXs: Set<number>;
+};
+
+type VoltageField = "x" | "v1" | "v2" | "v3" | "v4";
+
+type VoltageRow = Record<VoltageField, string> & {
+  id: number;
+};
+
+type VoltageRowResult = {
+  started: boolean;
+  complete: boolean;
+  missing: string[];
+  vh?: number;
+  b?: number;
 };
 
 type AnalysisRow = {
@@ -71,30 +103,15 @@ type AnalysisRow = {
 
 type QualityTone = "good" | "ok" | "warn" | "neutral";
 
-const defaultX = Array.from({ length: 37 }, (_, index) => -180 + index * 10);
-
 const labSteps = [
-  { label: "数据导入", caption: "采集与标定" },
+  { label: "数据采集", caption: "四路读数与标定" },
   { label: "模型拟合", caption: "物理参数反演" },
   { label: "质量控制", caption: "残差与可信度" },
   { label: "场图报告", caption: "可视化与导出" },
 ];
 
-function toFieldText(x: number[], values: number[]) {
-  return x.map((xValue, index) => `${xValue}, ${values[index].toFixed(4)}`).join("\n");
-}
-
-function parseNumberList(line: string) {
-  return line
-    .trim()
-    .split(/[\s,，;；\t]+/)
-    .filter(Boolean)
-    .map(Number)
-    .filter((value) => Number.isFinite(value));
-}
-
-function buildParseResult(points: AxisPoint[], rawLineCount: number): ParseResult {
-  const sorted = points.sort((a, b) => a.x - b.x);
+function buildParseResult(points: AxisPoint[], incompleteRows = 0, pendingRows = 0): ParseResult {
+  const sorted = [...points].sort((a, b) => a.x - b.x);
   const counts = new Map<number, number>();
   for (const point of sorted) {
     const key = Math.round(point.x * 1000) / 1000;
@@ -109,52 +126,72 @@ function buildParseResult(points: AxisPoint[], rawLineCount: number): ParseResul
   return {
     points: sorted,
     acceptedLines: sorted.length,
-    ignoredLines: Math.max(0, rawLineCount - sorted.length),
+    ignoredLines: incompleteRows,
+    incompleteRows,
+    pendingRows,
     duplicateXs,
   };
 }
 
-function parseFieldInput(text: string): ParseResult {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const points: AxisPoint[] = [];
-
-  for (const [index, line] of lines.entries()) {
-    const values = parseNumberList(line);
-    if (values.length >= 2) {
-      points.push({ x: values[0], b: values[1] });
-    } else if (values.length === 1 && index < defaultX.length) {
-      points.push({ x: defaultX[index], b: values[0] });
-    }
-  }
-
-  return buildParseResult(points, lines.length);
+function makeBlankVoltageRows(xValues: number[]): VoltageRow[] {
+  return xValues.map((x, index) => ({ id: index + 1, x: String(x), v1: "", v2: "", v3: "", v4: "" }));
 }
 
-function parseVoltageInput(text: string, kh: number, hallCurrentMa: number): ParseResult {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+function makeStoredVoltageRows(data: LabData["voltage"]["helmholtz"]): VoltageRow[] {
+  return data.xMm.map((x, index) => ({
+    id: index + 1,
+    x: String(x),
+    v1: String(data.v1Mv[index]),
+    v2: String(data.v2Mv[index]),
+    v3: String(data.v3Mv[index]),
+    v4: String(data.v4Mv[index]),
+  }));
+}
+
+function parseCell(value: string) {
+  if (value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function calculateVoltageRow(row: VoltageRow, kh: number, hallCurrentMa: number): VoltageRowResult {
+  const voltageFields: Array<[VoltageField, string]> = [
+    ["v1", "V1"],
+    ["v2", "V2"],
+    ["v3", "V3"],
+    ["v4", "V4"],
+  ];
+  const started = voltageFields.some(([field]) => row[field].trim() !== "");
+  const missing = voltageFields.filter(([field]) => parseCell(row[field]) === null).map(([, label]) => label);
+  const x = parseCell(row.x);
+
+  if (x === null || missing.length > 0 || kh <= 0 || hallCurrentMa <= 0) {
+    return { started, complete: false, missing };
+  }
+
+  const [v1, v2, v3, v4] = voltageFields.map(([field]) => parseCell(row[field]) as number);
+  const vh = (v1 - v2 + v3 - v4) / 4;
+  const b = hallVoltageToField({ v1, v2, v3, v4, kh, hallCurrentMa });
+  return { started, complete: Number.isFinite(b), missing: [], vh, b };
+}
+
+function parseVoltageRows(rows: VoltageRow[], kh: number, hallCurrentMa: number): ParseResult {
   const points: AxisPoint[] = [];
+  let incompleteRows = 0;
+  let pendingRows = 0;
 
-  for (const [index, line] of lines.entries()) {
-    const values = parseNumberList(line);
-    const pushPoint = (x: number, v1: number, v2: number, v3: number, v4: number) => {
-      const b = hallVoltageToField({ v1, v2, v3, v4, kh, hallCurrentMa });
-      if (Number.isFinite(b)) points.push({ x, b });
-    };
-
-    if (values.length >= 5) {
-      pushPoint(values[0], values[1], values[2], values[3], values[4]);
-    } else if (values.length === 4 && index < defaultX.length) {
-      pushPoint(defaultX[index], values[0], values[1], values[2], values[3]);
+  for (const row of rows) {
+    const result = calculateVoltageRow(row, kh, hallCurrentMa);
+    if (result.complete && result.b !== undefined) {
+      points.push({ x: Number(row.x), b: result.b });
+    } else if (result.started) {
+      incompleteRows += 1;
+    } else {
+      pendingRows += 1;
     }
   }
 
-  return buildParseResult(points, lines.length);
+  return buildParseResult(points, incompleteRows, pendingRows);
 }
 
 function downloadText(filename: string, content: string, type: string) {
@@ -233,25 +270,49 @@ function formatPercent(value: number | null | undefined) {
 export function StudentLab({ data }: { data: LabData }) {
   const samples: Sample[] = React.useMemo(
     () => [
-      { label: "亥姆霍兹 d=R", dRatio: 1, values: data.axis.helmMeasured },
-      { label: "双线圈 d=R/2", dRatio: 0.5, values: data.axis.halfMeasured },
-      { label: "双线圈 d=2R", dRatio: 2, values: data.axis.doubleMeasured },
+      {
+        id: "helmholtz",
+        label: "亥姆霍兹线圈",
+        note: "主实验 · d/R = 1.00",
+        dRatio: 1,
+        values: data.axis.helmMeasured,
+      },
+      {
+        id: "half",
+        label: "紧耦合双线圈",
+        note: "对照组 · d/R = 0.50",
+        dRatio: 0.5,
+        values: data.axis.halfMeasured,
+      },
+      {
+        id: "double",
+        label: "疏耦合双线圈",
+        note: "对照组 · d/R = 2.00",
+        dRatio: 2,
+        values: data.axis.doubleMeasured,
+      },
     ],
     [data.axis.doubleMeasured, data.axis.halfMeasured, data.axis.helmMeasured],
   );
 
   const [activeStep, setActiveStep] = React.useState(0);
-  const [mode, setMode] = React.useState<"field" | "voltage">("field");
+  const [mode, setMode] = React.useState<"demo" | "voltage">("demo");
+  const [activeSampleId, setActiveSampleId] = React.useState<Sample["id"]>("helmholtz");
   const [dRatio, setDRatio] = React.useState(1);
-  const [input, setInput] = React.useState(() => toFieldText(data.axis.xMm, data.axis.helmMeasured));
+  const [voltageRows, setVoltageRows] = React.useState<VoltageRow[]>(() => makeBlankVoltageRows(data.axis.xMm));
   const [kh, setKh] = React.useState(data.meta.kh);
   const [hallCurrent, setHallCurrent] = React.useState(data.meta.hallCurrentMa);
   const [errorLimit, setErrorLimit] = React.useState(3);
   const [uniformityWindow, setUniformityWindow] = React.useState(50);
+  const nextVoltageRowId = React.useRef(data.axis.xMm.length + 1);
+  const activeSample = samples.find((sample) => sample.id === activeSampleId) ?? samples[0];
 
   const parsed = React.useMemo(
-    () => (mode === "field" ? parseFieldInput(input) : parseVoltageInput(input, kh, hallCurrent)),
-    [hallCurrent, input, kh, mode],
+    () =>
+      mode === "demo"
+        ? buildParseResult(data.axis.xMm.map((x, index) => ({ x, b: activeSample.values[index] })))
+        : parseVoltageRows(voltageRows, kh, hallCurrent),
+    [activeSample.values, data.axis.xMm, hallCurrent, kh, mode, voltageRows],
   );
   const points = parsed.points;
 
@@ -343,6 +404,7 @@ export function StudentLab({ data }: { data: LabData }) {
     exportedAt: new Date().toISOString(),
     input: {
       mode,
+      dataset: mode === "demo" ? activeSample.id : "student-voltage-record",
       dRatio,
       kh,
       hallCurrentMa: hallCurrent,
@@ -352,8 +414,17 @@ export function StudentLab({ data }: { data: LabData }) {
     parse: {
       acceptedLines: parsed.acceptedLines,
       ignoredLines: parsed.ignoredLines,
+      incompleteRows: parsed.incompleteRows,
+      pendingRows: parsed.pendingRows,
       duplicateXs: Array.from(parsed.duplicateXs),
     },
+    rawVoltageRows:
+      mode === "voltage"
+        ? voltageRows.map(({ id: _id, ...row }) => ({
+            ...row,
+            result: calculateVoltageRow({ id: _id, ...row }, kh, hallCurrent),
+          }))
+        : undefined,
     fit,
     spacingEstimate,
     quality,
@@ -361,15 +432,50 @@ export function StudentLab({ data }: { data: LabData }) {
   };
 
   const loadSample = (sample: Sample) => {
-    setMode("field");
+    setMode("demo");
+    setActiveSampleId(sample.id);
     setDRatio(sample.dRatio);
-    setInput(toFieldText(data.axis.xMm, sample.values));
   };
 
-  const inputPlaceholder =
-    mode === "field"
-      ? "-180, 0.4253\n-170, 0.4943\n...\n也可以每行只填 B 值，系统自动使用 -180 到 180 mm 的 37 个轴线点"
-      : "-180, -0.68, -1.42, 1.36, 0.62\n-170, -0.62, -1.48, 1.42, 0.56\n...\n也可以每行只填 V1,V2,V3,V4";
+  const showDemoData = () => {
+    setMode("demo");
+    setDRatio(activeSample.dRatio);
+  };
+
+  const loadStoredVoltages = () => {
+    setMode("voltage");
+    setDRatio(1);
+    setVoltageRows(makeStoredVoltageRows(data.voltage.helmholtz));
+  };
+
+  const resetVoltageRows = () => {
+    setVoltageRows(makeBlankVoltageRows(data.axis.xMm));
+  };
+
+  const addVoltageRow = () => {
+    setVoltageRows((rows) => {
+      const lastX = rows.length > 0 ? parseCell(rows[rows.length - 1].x) : null;
+      return [
+        ...rows,
+        {
+          id: nextVoltageRowId.current++,
+          x: String(lastX === null ? 0 : lastX + 10),
+          v1: "",
+          v2: "",
+          v3: "",
+          v4: "",
+        },
+      ];
+    });
+  };
+
+  const updateVoltageRow = (id: number, field: VoltageField, value: string) => {
+    setVoltageRows((rows) => rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
+  };
+
+  const removeVoltageRow = (id: number) => {
+    setVoltageRows((rows) => rows.filter((row) => row.id !== id));
+  };
 
   const resultStrip = (
     <div className="student-result-strip guided-result-strip">
@@ -406,38 +512,45 @@ export function StudentLab({ data }: { data: LabData }) {
         <Clipboard size={18} />
         <div>
           <h2>数据采集与标定</h2>
-          <p className="panel-subtitle">导入轴线磁场或四路霍尔电压，建立本次实验的原始记录。</p>
+          <p className="panel-subtitle">先查看归档实测数据，或按测量顺序录入 V1-V4，由系统自动完成消偏与磁场换算。</p>
         </div>
       </div>
 
-      <div className="mode-tabs" role="tablist" aria-label="输入模式">
-        <button type="button" className={mode === "field" ? "active" : ""} onClick={() => setMode("field")}>
-          B(mT)
+      <div className="data-source-switch" role="tablist" aria-label="实验数据来源">
+        <button type="button" className={mode === "demo" ? "active" : ""} onClick={showDemoData}>
+          <Database size={19} />
+          <span>
+            <strong>内置演示数据</strong>
+            <em>默认载入 37 点实测曲线</em>
+          </span>
         </button>
         <button type="button" className={mode === "voltage" ? "active" : ""} onClick={() => setMode("voltage")}>
-          V1-V4
+          <Keyboard size={19} />
+          <span>
+            <strong>学生四路采集</strong>
+            <em>录入 V1-V4，自动计算 B</em>
+          </span>
         </button>
       </div>
 
-      <label className="mini-label" htmlFor="student-d">
-        <span>设定线圈间距 d/R</span>
-        <input
-          id="student-d"
-          type="number"
-          min="0.4"
-          max="2.2"
-          step="0.1"
-          value={dRatio}
-          onChange={(event) => {
-            const next = readNumber(event.currentTarget.value, dRatio);
-            setDRatio(Math.max(0.4, Math.min(2.2, next)));
-          }}
-        />
-      </label>
-
-      <div className="analysis-controls">
+      <div className="experiment-settings-grid">
         <label>
-          误差阈值(%)
+          线圈间距 d/R
+          <input
+            id="student-d"
+            type="number"
+            min="0.4"
+            max="2.2"
+            step="0.1"
+            value={dRatio}
+            onChange={(event) => {
+              const next = readNumber(event.currentTarget.value, dRatio);
+              setDRatio(Math.max(0.4, Math.min(2.2, next)));
+            }}
+          />
+        </label>
+        <label>
+          误差阈值 (%)
           <input
             type="number"
             min="0.5"
@@ -448,60 +561,211 @@ export function StudentLab({ data }: { data: LabData }) {
           />
         </label>
         <label>
-          均匀区(mm)
+          均匀区 (mm)
           <input
             type="number"
             min="10"
             max="100"
             step="10"
             value={uniformityWindow}
-            onChange={(event) => setUniformityWindow(Math.max(10, readNumber(event.currentTarget.value, uniformityWindow)))}
+            onChange={(event) =>
+              setUniformityWindow(Math.max(10, readNumber(event.currentTarget.value, uniformityWindow)))
+            }
           />
         </label>
       </div>
 
-      {mode === "voltage" && (
-        <div className="calibration-row">
-          <label>
-            KH
-            <input
-              type="number"
-              step="0.001"
-              value={kh}
-              onChange={(event) => setKh(readNumber(event.currentTarget.value, data.meta.kh))}
-            />
-          </label>
-          <label>
-            IS(mA)
-            <input
-              type="number"
-              step="0.1"
-              value={hallCurrent}
-              onChange={(event) => setHallCurrent(readNumber(event.currentTarget.value, data.meta.hallCurrentMa))}
-            />
-          </label>
+      {mode === "demo" ? (
+        <div className="demo-dataset-workbench">
+          <div className="dataset-titlebar">
+            <div>
+              <span>Archived Measurement</span>
+              <strong>{activeSample.label}</strong>
+              <em>{activeSample.note}</em>
+            </div>
+            <span className="dataset-badge">原始实验归档</span>
+          </div>
+
+          <div className="dataset-selector" aria-label="内置实验数据集">
+            {samples.map((sample) => (
+              <button
+                type="button"
+                key={sample.id}
+                className={sample.id === activeSample.id ? "active" : ""}
+                onClick={() => loadSample(sample)}
+              >
+                <RefreshCw size={15} />
+                <span>
+                  <strong>{sample.label}</strong>
+                  <em>{sample.note}</em>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="demo-table-wrap">
+            <table className="demo-data-table">
+              <thead>
+                <tr>
+                  <th>序号</th>
+                  <th>x (mm)</th>
+                  <th>B (mT)</th>
+                  <th>记录状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.axis.xMm.map((x, index) => (
+                  <tr key={`${activeSample.id}-${x}`} className={x === 0 ? "center-point" : ""}>
+                    <td>{String(index + 1).padStart(2, "0")}</td>
+                    <td>{x}</td>
+                    <td>{activeSample.values[index].toFixed(4)}</td>
+                    <td>
+                      <span className="record-status ready">已归档</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="dataset-footline">
+            <span>37 / 37 个轴线测点</span>
+            <span>-180 至 180 mm · 步长 10 mm</span>
+            <span>数据将直接进入模型拟合</span>
+          </div>
+        </div>
+      ) : (
+        <div className="voltage-workbench">
+          <div className="calibration-band">
+            <div className="conversion-formula">
+              <Sigma size={20} />
+              <div>
+                <span>四次换向消偏与标定换算</span>
+                <strong>V<sub>H</sub> = (V1 - V2 + V3 - V4) / 4</strong>
+                <em>B = V<sub>H</sub> / (K<sub>H</sub> I<sub>S</sub>)</em>
+              </div>
+            </div>
+            <div className="calibration-row">
+              <label>
+                <span>
+                  K<sub>H</sub> [mV/(mA·mT)]
+                </span>
+                <input
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  value={kh}
+                  onChange={(event) => setKh(readNumber(event.currentTarget.value, data.meta.kh))}
+                />
+              </label>
+              <label>
+                <span>
+                  I<sub>S</sub> (mA)
+                </span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={hallCurrent}
+                  onChange={(event) => setHallCurrent(readNumber(event.currentTarget.value, data.meta.hallCurrentMa))}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="voltage-toolbar">
+            <div>
+              <strong>轴线原始读数表</strong>
+              <span>单位统一为 mV；任意一行填齐四路读数后立即换算。</span>
+            </div>
+            <div className="voltage-actions">
+              <button type="button" onClick={loadStoredVoltages} title="载入项目中保存的亥姆霍兹四路原始电压">
+                <Database size={15} />
+                载入主实验记录
+              </button>
+              <button type="button" onClick={resetVoltageRows} title="恢复为 37 个标准位置的空白记录表">
+                <RotateCcw size={15} />
+                标准空表
+              </button>
+              <button type="button" onClick={addVoltageRow} title="在记录表末尾增加一个测点">
+                <Plus size={15} />
+                新增测点
+              </button>
+            </div>
+          </div>
+
+          <div className="voltage-table-wrap">
+            <table className="voltage-entry-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>x (mm)</th>
+                  <th>V1 (mV)</th>
+                  <th>V2 (mV)</th>
+                  <th>V3 (mV)</th>
+                  <th>V4 (mV)</th>
+                  <th>V<sub>H</sub> (mV)</th>
+                  <th>B (mT)</th>
+                  <th>状态</th>
+                  <th aria-label="删除记录" />
+                </tr>
+              </thead>
+              <tbody>
+                {voltageRows.map((row, index) => {
+                  const result = calculateVoltageRow(row, kh, hallCurrent);
+                  const statusText = result.complete
+                    ? "已换算"
+                    : result.started
+                      ? result.missing.length > 0
+                        ? `缺 ${result.missing.join("/")}`
+                        : "检查标定"
+                      : "待录入";
+                  return (
+                    <tr key={row.id} className={result.complete ? "complete" : result.started ? "partial" : ""}>
+                      <td>{String(index + 1).padStart(2, "0")}</td>
+                      {(["x", "v1", "v2", "v3", "v4"] as VoltageField[]).map((field) => (
+                        <td key={field}>
+                          <input
+                            type="number"
+                            step={field === "x" ? "1" : "0.01"}
+                            value={row[field]}
+                            aria-label={`第 ${index + 1} 行 ${field.toUpperCase()}`}
+                            onChange={(event) => updateVoltageRow(row.id, field, event.currentTarget.value)}
+                          />
+                        </td>
+                      ))}
+                      <td className="computed-value">{result.vh === undefined ? "--" : result.vh.toFixed(4)}</td>
+                      <td className="computed-value field-value">
+                        {result.b === undefined ? "--" : result.b.toFixed(4)}
+                      </td>
+                      <td>
+                        <span className={`record-status ${result.complete ? "ready" : result.started ? "partial" : "pending"}`}>
+                          {statusText}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="remove-record"
+                          onClick={() => removeVoltageRow(row.id)}
+                          title={`删除第 ${index + 1} 个测点`}
+                          aria-label={`删除第 ${index + 1} 个测点`}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="voltage-footline">
+            <span>已换算 {parsed.acceptedLines} 点</span>
+            <span>录入中 {parsed.incompleteRows} 点</span>
+            <span>待录入 {parsed.pendingRows} 点</span>
+          </div>
         </div>
       )}
-
-      <textarea
-        value={input}
-        onChange={(event) => setInput(event.currentTarget.value)}
-        placeholder={inputPlaceholder}
-        rows={14}
-      />
-
-      <div className="student-actions">
-        {samples.map((sample) => (
-          <button type="button" key={sample.label} onClick={() => loadSample(sample)}>
-            <RefreshCw size={14} />
-            {sample.label}
-          </button>
-        ))}
-        <button type="button" onClick={() => setInput("")}>
-          <Eraser size={14} />
-          清空
-        </button>
-      </div>
     </div>
   );
 
@@ -510,8 +774,8 @@ export function StudentLab({ data }: { data: LabData }) {
       <div className="panel-heading">
         <TableProperties size={18} />
         <div>
-          <h3>导入状态</h3>
-          <p className="panel-subtitle">解析结果会进入后续拟合、质控和导出记录。</p>
+          <h3>数据状态</h3>
+          <p className="panel-subtitle">这里只把完整、可换算的测点送入后续拟合与质量控制。</p>
         </div>
       </div>
       <div className="parse-grid">
@@ -520,21 +784,25 @@ export function StudentLab({ data }: { data: LabData }) {
           <strong>{parsed.acceptedLines}</strong>
         </div>
         <div>
-          <span>忽略行</span>
-          <strong>{parsed.ignoredLines}</strong>
+          <span>{mode === "demo" ? "数据完整性" : "录入中"}</span>
+          <strong>{mode === "demo" ? "100%" : parsed.incompleteRows}</strong>
         </div>
         <div>
-          <span>重复 x</span>
-          <strong>{parsed.duplicateXs.size}</strong>
+          <span>{mode === "demo" ? "重复 x" : "待录入"}</span>
+          <strong>{mode === "demo" ? parsed.duplicateXs.size : parsed.pendingRows}</strong>
         </div>
         <div>
-          <span>输入模式</span>
-          <strong>{mode === "field" ? "B(mT)" : "V1-V4"}</strong>
+          <span>数据来源</span>
+          <strong className="parse-source-value">{mode === "demo" ? "内置实测" : "四路电压"}</strong>
         </div>
       </div>
       <div className="input-help compact-help">
         <TableProperties size={17} />
-        <p>支持逗号、空格、制表符。若省略 x，默认使用 -180 到 180 mm、步长 10 mm 的 37 个轴线点。</p>
+        <p>
+          {mode === "demo"
+            ? "默认主实验数据来自项目归档；可在左侧切换两组线圈间距对照数据。"
+            : "标准空表已预置 -180 至 180 mm 的 37 个位置；四个电压缺一项时，该行不会进入拟合。"}
+        </p>
       </div>
     </div>
   );
@@ -560,15 +828,19 @@ export function StudentLab({ data }: { data: LabData }) {
           <em>后续反演复核</em>
         </div>
         <div>
-          <span>误差阈值</span>
-          <strong>{errorLimit.toFixed(1)}%</strong>
-          <em>逐点审计标记</em>
+          <span>记录来源</span>
+          <strong>{mode === "demo" ? "项目归档" : "学生录入"}</strong>
+          <em>{mode === "demo" ? activeSample.note : `KH=${kh} · IS=${hallCurrent}mA`}</em>
         </div>
       </div>
       <ol className="lab-check-list">
-        <li>进入模型拟合后，系统会给出等效电流、RMSE 与 R²。</li>
+        <li>
+          {mode === "demo"
+            ? "当前数据可直接进入模型拟合，系统会给出等效电流、RMSE 与 R²。"
+            : "仅四路电压完整且标定参数有效的测点会进入模型拟合。"}
+        </li>
         <li>质量控制将检查对称性、中心均匀性和线圈间距反演误差。</li>
-        <li>报告步骤会保留原始输入、拟合参数、残差表和二维场图。</li>
+        <li>报告步骤会保留原始四路读数、换算结果、拟合参数、残差表和二维场图。</li>
       </ol>
     </div>
   );
@@ -603,8 +875,8 @@ export function StudentLab({ data }: { data: LabData }) {
           <em>B(+x) vs B(-x)</em>
         </div>
         <div>
-          <span>忽略记录</span>
-          <strong>{parsed.ignoredLines}</strong>
+          <span>{mode === "demo" ? "记录完整性" : "未完成记录"}</span>
+          <strong>{mode === "demo" ? "100%" : parsed.incompleteRows + parsed.pendingRows}</strong>
           <em>{parsed.duplicateXs.size} 个重复 x</em>
         </div>
       </div>

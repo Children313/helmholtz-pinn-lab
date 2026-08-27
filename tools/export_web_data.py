@@ -64,6 +64,15 @@ def main() -> None:
             "biotSingle": arr(biot["B_single_num"]),
             "biotHelm": arr(biot["B_helm_num"]),
         },
+        "voltage": {
+            "helmholtz": {
+                "xMm": arr(processed["x_mm"]),
+                "v1Mv": arr(processed["V1_t3"]),
+                "v2Mv": arr(processed["V2_t3"]),
+                "v3Mv": arr(processed["V3_t3"]),
+                "v4Mv": arr(processed["V4_t3"]),
+            },
+        },
         "parametric": {
             "errHalf": arr(param["err_t2"]),
             "errHelm": arr(param["err_t3"]),

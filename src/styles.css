@@ -789,7 +789,7 @@ label,
 }
 
 .stage-import {
-  grid-template-columns: minmax(440px, 0.92fr) minmax(480px, 1.08fr);
+  grid-template-columns: minmax(720px, 1.45fr) minmax(360px, 0.55fr);
   grid-template-areas:
     "input parse"
     "input acquisition";
@@ -1058,6 +1058,480 @@ label,
   background: #0f4c81;
   color: #fff;
   box-shadow: 0 8px 18px rgba(15, 76, 129, 0.18);
+}
+
+.data-source-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 5px;
+  border: 1px solid #d9e3ee;
+  border-radius: 8px;
+  background: #f3f7fa;
+}
+
+.data-source-switch button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 58px;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #43556c;
+  text-align: left;
+  cursor: pointer;
+}
+
+.data-source-switch button > span,
+.dataset-selector button > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.data-source-switch strong,
+.dataset-selector strong {
+  color: inherit;
+  font-family: var(--font-medium);
+  font-size: 14px;
+}
+
+.data-source-switch em,
+.dataset-selector em {
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.data-source-switch button.active {
+  border-color: #a9c9df;
+  background: #fff;
+  color: var(--blue);
+  box-shadow: 0 8px 20px rgba(15, 76, 129, 0.1);
+}
+
+.data-source-switch button.active svg {
+  color: var(--teal);
+}
+
+.experiment-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.experiment-settings-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-family: var(--font-small);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.experiment-settings-grid input {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid #d7dee9;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-medium);
+  font-weight: 800;
+}
+
+.demo-dataset-workbench,
+.voltage-workbench {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dce5ee;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.dataset-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #dce5ee;
+  background: #f4f8fb;
+}
+
+.dataset-titlebar > div {
+  display: grid;
+  gap: 3px;
+}
+
+.dataset-titlebar > div > span {
+  color: var(--teal);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.dataset-titlebar strong {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 17px;
+}
+
+.dataset-titlebar em {
+  color: var(--muted);
+  font-family: var(--font-small);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.dataset-badge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid #b9dcd8;
+  border-radius: 6px;
+  background: #edf9f7;
+  color: #0f766e;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.dataset-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e3eaf1;
+  background: #fff;
+}
+
+.dataset-selector button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 9px 10px;
+  border: 1px solid #dce5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #43556c;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dataset-selector button:hover,
+.dataset-selector button.active {
+  border-color: #85b8d7;
+  background: #f1f8fc;
+  color: var(--blue);
+}
+
+.dataset-selector button.active svg {
+  color: var(--teal);
+}
+
+.demo-table-wrap,
+.voltage-table-wrap {
+  overflow: auto;
+  scrollbar-color: #9fb1c3 #edf2f7;
+}
+
+.demo-table-wrap {
+  max-height: 360px;
+}
+
+.demo-data-table,
+.voltage-entry-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #26384d;
+  font-variant-numeric: tabular-nums;
+}
+
+.demo-data-table {
+  table-layout: fixed;
+}
+
+.demo-data-table th,
+.demo-data-table td,
+.voltage-entry-table th,
+.voltage-entry-table td {
+  border-bottom: 1px solid #e5ebf1;
+  text-align: center;
+}
+
+.demo-data-table th,
+.voltage-entry-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 9px 8px;
+  background: #eef4f8;
+  color: #516579;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.demo-data-table td {
+  height: 37px;
+  padding: 7px 8px;
+  background: #fff;
+  font-family: var(--font-medium);
+  font-size: 12px;
+}
+
+.demo-data-table tbody tr:nth-child(even) td {
+  background: #f9fbfd;
+}
+
+.demo-data-table tbody tr.center-point td {
+  background: #eef9f7;
+  color: #0f5f5a;
+  font-weight: 900;
+}
+
+.record-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 23px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-family: var(--font-small);
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.record-status.ready {
+  background: #eaf8f3;
+  color: #047857;
+}
+
+.record-status.partial {
+  background: #fff5df;
+  color: #9a5a08;
+}
+
+.record-status.pending {
+  background: #edf2f7;
+  color: #64748b;
+}
+
+.dataset-footline,
+.voltage-footline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f4f8fb;
+  color: #63758a;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.calibration-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 12px;
+  padding: 13px;
+  border-bottom: 1px solid #dce5ee;
+  background: #f4f8fb;
+}
+
+.conversion-formula {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--teal);
+  background: #fff;
+}
+
+.conversion-formula svg {
+  flex: 0 0 auto;
+  color: var(--teal);
+}
+
+.conversion-formula > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.conversion-formula span,
+.conversion-formula em {
+  color: #63758a;
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.conversion-formula strong {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.voltage-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px;
+  border-bottom: 1px solid #e3eaf1;
+  background: #fff;
+}
+
+.voltage-toolbar > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.voltage-toolbar strong {
+  color: var(--blue);
+  font-family: var(--font-medium);
+  font-size: 14px;
+}
+
+.voltage-toolbar span {
+  color: #6b7c91;
+  font-family: var(--font-small);
+  font-size: 11px;
+}
+
+.voltage-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.voltage-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid #d4e0ea;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--blue);
+  font-family: var(--font-small);
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.voltage-actions button:hover {
+  border-color: #85b8d7;
+  background: #f1f8fc;
+}
+
+.voltage-table-wrap {
+  max-height: 500px;
+}
+
+.voltage-entry-table {
+  min-width: 940px;
+  table-layout: fixed;
+}
+
+.voltage-entry-table th:nth-child(1) { width: 42px; }
+.voltage-entry-table th:nth-child(2) { width: 82px; }
+.voltage-entry-table th:nth-child(n+3):nth-child(-n+6) { width: 88px; }
+.voltage-entry-table th:nth-child(7),
+.voltage-entry-table th:nth-child(8) { width: 98px; }
+.voltage-entry-table th:nth-child(9) { width: 92px; }
+.voltage-entry-table th:nth-child(10) { width: 42px; }
+
+.voltage-entry-table td {
+  height: 43px;
+  padding: 5px 4px;
+  background: #fff;
+  font-family: var(--font-medium);
+  font-size: 11px;
+}
+
+.voltage-entry-table tbody tr:nth-child(even) td {
+  background: #fbfcfe;
+}
+
+.voltage-entry-table tbody tr.complete td {
+  background: #f4fbf9;
+}
+
+.voltage-entry-table tbody tr.partial td {
+  background: #fffaf0;
+}
+
+.voltage-entry-table input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 4px 5px;
+  border: 1px solid #d9e2ec;
+  border-radius: 5px;
+  background: #fff;
+  color: #172033;
+  text-align: right;
+  font-family: var(--font-medium);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.voltage-entry-table input:focus,
+.experiment-settings-grid input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(15, 159, 154, 0.13);
+  outline: 0;
+}
+
+.computed-value {
+  color: #526579;
+  font-weight: 800;
+}
+
+.computed-value.field-value {
+  color: var(--blue);
+  font-weight: 900;
+}
+
+.remove-record {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #8a9aae;
+  cursor: pointer;
+}
+
+.remove-record:hover {
+  background: #fff0ee;
+  color: #b94032;
+}
+
+.parse-source-value {
+  font-size: 18px !important;
+  line-height: 1.15 !important;
 }
 
 .mini-label,
@@ -2084,6 +2558,10 @@ footer {
   .student-actions,
   .calibration-row,
   .analysis-controls,
+  .data-source-switch,
+  .experiment-settings-grid,
+  .dataset-selector,
+  .calibration-band,
   .quality-grid,
   .lab-check-grid,
   .report-metric-grid,
@@ -2094,6 +2572,31 @@ footer {
   }
 
   .mini-label {
+    grid-template-columns: 1fr;
+  }
+
+  .student-input-panel {
+    padding: 14px;
+  }
+
+  .dataset-titlebar,
+  .voltage-toolbar,
+  .dataset-footline,
+  .voltage-footline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .voltage-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .voltage-actions button {
+    width: 100%;
+  }
+
+  .calibration-band {
     grid-template-columns: 1fr;
   }
 
