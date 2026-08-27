@@ -35,7 +35,12 @@ type WebData = typeof webData;
 type ViewKey = "home" | "workbench" | "simulation" | "evidence" | "experiment" | "reproduce";
 
 const data = webData as WebData;
-const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
+const embeddedAssets = (globalThis as typeof globalThis & { __HELMHOLTZ_ASSETS__?: Record<string, string> })
+  .__HELMHOLTZ_ASSETS__;
+const assetPath = (path: string) => {
+  const normalizedPath = path.replace(/^\/+/, "");
+  return embeddedAssets?.[normalizedPath] ?? `${import.meta.env.BASE_URL}${normalizedPath}`;
+};
 
 const navItems: Array<{ id: ViewKey; label: string; icon: React.ElementType }> = [
   { id: "home", label: "主控台", icon: Home },
@@ -616,9 +621,9 @@ function ReproduceView() {
     <ViewFrame eyebrow="Reproducibility" title="复现流水线与图像材料">
       <div className="section-title inline-title">
         <span />
-        <a className="ghost-link" href={assetPath("assets/param_animation.gif")} target="_blank" rel="noreferrer">
+        <a className="ghost-link" href={assetPath("assets/param_animation_3d.gif")} target="_blank" rel="noreferrer">
           <Download size={16} />
-          查看扫描 GIF
+          查看三维联动 GIF
         </a>
       </div>
       <div className="pipeline module-surface flat">
