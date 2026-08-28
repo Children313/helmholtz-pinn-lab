@@ -7,9 +7,9 @@ const COIL_RADIUS = 0.95;
 const FIELD_SEGMENTS = 56;
 const TRACE_STEP = 0.036;
 const TRACE_STEPS = 240;
-const MAX_X = 4.25;
+const MAX_X = 5.2;
 const MAX_RHO = 1.78;
-const FIXED_COIL_X = -1.45;
+const FIXED_COIL_X = -3.1;
 const PROBE_ROD_LENGTH = 2.75;
 
 type FieldParticle = {
@@ -142,6 +142,13 @@ function createRail(length: number, radius: number, position: [number, number, n
   return rail;
 }
 
+function createCable(points: THREE.Vector3[], material: THREE.Material, radius = 0.024) {
+  const curve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42);
+  const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 72, radius, 8, false), material);
+  cable.castShadow = true;
+  return cable;
+}
+
 function createCoilAssembly(materials: {
   copper: THREE.Material;
   copperDark: THREE.Material;
@@ -175,8 +182,15 @@ function createCoilAssembly(materials: {
   const terminalMaterial = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.35, metalness: 0.2 });
   const terminal = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.18, 14), terminalMaterial);
   terminal.rotation.z = Math.PI / 2;
-  terminal.position.set(0, -0.72, 0.63);
+  terminal.position.set(0, -0.72, 0.67);
   assembly.add(terminal);
+  const returnTerminal = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.035, 0.035, 0.18, 14),
+    new THREE.MeshStandardMaterial({ color: 0x181b1f, roughness: 0.38, metalness: 0.28 }),
+  );
+  returnTerminal.rotation.z = Math.PI / 2;
+  returnTerminal.position.set(0, -0.72, 0.49);
+  assembly.add(returnTerminal);
   return assembly;
 }
 
@@ -190,6 +204,67 @@ function createDimensionTexture() {
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(1.55, 0.39, 1);
   return { canvas, texture, sprite };
+}
+
+function createInstrumentPanelTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1280;
+  canvas.height = 480;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return { canvas, texture };
+}
+
+function drawInstrumentPanel(canvas: HTMLCanvasElement, hallVoltageMv: number) {
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#e8e5c8";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#7b4326";
+  context.font = "700 34px sans-serif";
+  context.fillText("3D HELMHOLTZ COIL MAGNETIC FIELD LAB", 46, 55);
+
+  const readings = ["5.00", hallVoltageMv.toFixed(2), "0.500"];
+  const units = ["mA  IS", "mV  VH", "A  IM"];
+  readings.forEach((reading, index) => {
+    const x = 56 + index * 410;
+    context.fillStyle = "#50533d";
+    context.fillRect(x, 88, 330, 132);
+    context.shadowColor = "#e9f43d";
+    context.shadowBlur = 18;
+    context.fillStyle = "#eff54b";
+    context.font = "700 72px monospace";
+    context.textAlign = "center";
+    context.fillText(reading, x + 165, 180);
+    context.shadowBlur = 0;
+    context.fillStyle = "#615f46";
+    context.font = "700 26px sans-serif";
+    context.fillText(units[index], x + 165, 255);
+
+    for (let knob = 0; knob < 4; knob += 1) {
+      context.beginPath();
+      context.fillStyle = knob % 2 === 0 ? "#b54236" : "#2f3334";
+      context.arc(x + 56 + knob * 76, 326, 20, 0, Math.PI * 2);
+      context.fill();
+    }
+  });
+  context.textAlign = "left";
+  context.fillStyle = "#7a4930";
+  context.font = "700 23px sans-serif";
+  context.fillText("HALL VOLTAGE / EXCITATION / REVERSING CONTROL", 54, 420);
+}
+
+function estimateHallVoltageMv(dRatio: number, probeXMm: number, radiusMm: number) {
+  const sensorOffsetR = probeXMm / radiusMm;
+  const relativeField = [-dRatio / 2, dRatio / 2].reduce(
+    (sum, coilX) => sum + Math.pow(1 + Math.pow(sensorOffsetR - coilX, 2), -1.5),
+    0,
+  );
+  const helmholtzReference = 2 * Math.pow(1 + 0.25, -1.5);
+  const bMilliTesla = 2.255 * (relativeField / helmholtzReference);
+  return 0.174 * 5 * bMilliTesla;
 }
 
 function drawDimensionLabel(canvas: HTMLCanvasElement, dMm: number) {
@@ -261,6 +336,9 @@ export function FieldScene({
   const dimensionCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const dimensionTextureRef = React.useRef<THREE.CanvasTexture | null>(null);
   const dimensionSpriteRef = React.useRef<THREE.Sprite | null>(null);
+  const instrumentCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const instrumentTextureRef = React.useRef<THREE.CanvasTexture | null>(null);
+  const wiringGroupRef = React.useRef<THREE.Group | null>(null);
   const uniformityVolumeRef = React.useRef<THREE.Mesh | null>(null);
 
   const setView = React.useCallback((preset: ViewPreset) => {
@@ -339,6 +417,7 @@ export function FieldScene({
       roughness: 0.34,
       metalness: 0.24,
     });
+    const instrumentBeige = new THREE.MeshStandardMaterial({ color: 0xd9d5b8, roughness: 0.62, metalness: 0.18 });
     const copper = new THREE.MeshStandardMaterial({
       color: 0xd46b2c,
       emissive: 0x4e1605,
@@ -405,11 +484,11 @@ export function FieldScene({
     apparatus.add(leftCoil, rightCoil);
     coilGroupsRef.current = [leftCoil, rightCoil];
 
-    apparatus.add(createBox([4.25, 0.1, 0.42], [1.82, -0.94, 0.72], guideOrange));
-    apparatus.add(createRail(4.08, 0.035, [1.82, -0.83, 0.55], steel));
-    apparatus.add(createRail(4.08, 0.035, [1.82, -0.83, 0.89], steel));
-    apparatus.add(createBox([0.18, 0.09, 2.02], [0.02, -1.0, 0], steel));
-    apparatus.add(createBox([0.18, 0.09, 2.02], [3.64, -1.0, 0], steel));
+    apparatus.add(createBox([5.25, 0.1, 0.42], [0.85, -0.94, 0.72], guideOrange));
+    apparatus.add(createRail(5.08, 0.035, [0.85, -0.83, 0.55], steel));
+    apparatus.add(createRail(5.08, 0.035, [0.85, -0.83, 0.89], steel));
+    apparatus.add(createBox([0.18, 0.09, 2.02], [-1.62, -1.0, 0], steel));
+    apparatus.add(createBox([0.18, 0.09, 2.02], [3.32, -1.0, 0], steel));
 
     const probeCarriage = new THREE.Group();
     probeCarriage.position.x = targetProbeCarriageRef.current;
@@ -424,6 +503,27 @@ export function FieldScene({
     apparatus.add(probeCarriage);
     probeCarriageRef.current = probeCarriage;
     scene.add(apparatus);
+
+    const instrumentPanel = createInstrumentPanelTexture();
+    drawInstrumentPanel(instrumentPanel.canvas, estimateHallVoltageMv(dRatio, probeXMm, radiusMm));
+    instrumentPanel.texture.needsUpdate = true;
+    instrumentCanvasRef.current = instrumentPanel.canvas;
+    instrumentTextureRef.current = instrumentPanel.texture;
+    const instrumentGroup = new THREE.Group();
+    instrumentGroup.position.set(3.78, -0.78, -2.03);
+    instrumentGroup.add(createBox([2.78, 1.28, 1.48], [0, 0, 0], instrumentBeige));
+    instrumentGroup.add(createBox([2.64, 0.12, 1.34], [0, 0.7, 0], blackSoft));
+    const panelFace = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.56, 0.92),
+      new THREE.MeshBasicMaterial({ map: instrumentPanel.texture }),
+    );
+    panelFace.position.set(0, -0.04, 0.745);
+    instrumentGroup.add(panelFace);
+    scene.add(instrumentGroup);
+
+    const wiringGroup = new THREE.Group();
+    wiringGroupRef.current = wiringGroup;
+    scene.add(wiringGroup);
 
     const fieldGroup = new THREE.Group();
     fieldGroupRef.current = fieldGroup;
@@ -467,7 +567,7 @@ export function FieldScene({
       const width = Math.max(1, mount.clientWidth);
       const height = Math.max(1, mount.clientHeight);
       camera.aspect = width / height;
-      camera.fov = width <= 720 ? 58 : 38;
+      camera.fov = width <= 720 ? 86 : 38;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
     };
@@ -509,8 +609,10 @@ export function FieldScene({
       resizeObserver.disconnect();
       orbit.dispose();
       clearGroup(fieldGroup);
+      if (wiringGroupRef.current) clearGroup(wiringGroupRef.current);
       particlesRef.current = [];
       dimension.texture.dispose();
+      instrumentPanel.texture.dispose();
       scene.traverse(disposeObject);
       renderer.dispose();
       renderer.forceContextLoss();
@@ -521,6 +623,9 @@ export function FieldScene({
       coilGroupsRef.current = [];
       probeCarriageRef.current = null;
       dimensionSpriteRef.current = null;
+      instrumentCanvasRef.current = null;
+      instrumentTextureRef.current = null;
+      wiringGroupRef.current = null;
     };
   }, [radiusMm]);
 
@@ -590,6 +695,69 @@ export function FieldScene({
     if (dimensionCanvasRef.current && dimensionTextureRef.current) {
       drawDimensionLabel(dimensionCanvasRef.current, dMm);
       dimensionTextureRef.current.needsUpdate = true;
+    }
+    if (instrumentCanvasRef.current && instrumentTextureRef.current) {
+      drawInstrumentPanel(
+        instrumentCanvasRef.current,
+        estimateHallVoltageMv(dRatio, probeXMm, radiusMm),
+      );
+      instrumentTextureRef.current.needsUpdate = true;
+    }
+    if (wiringGroupRef.current) {
+      clearGroup(wiringGroupRef.current);
+      const redCable = new THREE.MeshStandardMaterial({ color: 0xd3312f, roughness: 0.62, metalness: 0.06 });
+      const blackCable = new THREE.MeshStandardMaterial({ color: 0x20252a, roughness: 0.68, metalness: 0.04 });
+      const signalCable = new THREE.MeshStandardMaterial({ color: 0x315d82, roughness: 0.64, metalness: 0.05 });
+      const probeCarriageX = targetProbeCarriageRef.current;
+      wiringGroupRef.current.add(
+        createCable(
+          [
+            new THREE.Vector3(FIXED_COIL_X, -0.72, 0.67),
+            new THREE.Vector3(FIXED_COIL_X - 0.12, -1.16, 0.25),
+            new THREE.Vector3(1.4, -1.18, -0.82),
+            new THREE.Vector3(4.28, -0.98, -1.27),
+          ],
+          redCable,
+        ),
+        createCable(
+          [
+            new THREE.Vector3(movingCoilX, -0.72, 0.49),
+            new THREE.Vector3(movingCoilX + 0.18, -1.12, 0.12),
+            new THREE.Vector3(1.75, -1.2, -0.94),
+            new THREE.Vector3(4.72, -0.98, -1.27),
+          ],
+          blackCable,
+        ),
+        createCable(
+          [
+            new THREE.Vector3(FIXED_COIL_X, -0.72, 0.49),
+            new THREE.Vector3(pairCenterX, -0.93, 0.86),
+            new THREE.Vector3(movingCoilX, -0.72, 0.67),
+          ],
+          blackCable,
+          0.019,
+        ),
+        createCable(
+          [
+            new THREE.Vector3(probeCarriageX, -0.04, 0.72),
+            new THREE.Vector3(probeCarriageX + 0.18, -0.8, 0.22),
+            new THREE.Vector3(2.1, -1.19, -0.72),
+            new THREE.Vector3(3.74, -0.98, -1.27),
+          ],
+          signalCable,
+          0.028,
+        ),
+        createCable(
+          [
+            new THREE.Vector3(probeCarriageX + 0.08, -0.12, 0.66),
+            new THREE.Vector3(probeCarriageX + 0.38, -0.92, 0.08),
+            new THREE.Vector3(1.82, -1.2, -0.62),
+            new THREE.Vector3(2.92, -0.98, -1.27),
+          ],
+          redCable,
+          0.017,
+        ),
+      );
     }
     if (uniformityVolumeRef.current) {
       uniformityVolumeRef.current.position.x = pairCenterX;
