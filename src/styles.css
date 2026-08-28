@@ -2134,7 +2134,7 @@ input[type="range"] {
   margin: 0 auto;
   overflow: hidden;
   border-radius: 6px;
-  background: #07090d;
+  background: #fff;
   box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18);
   isolation: isolate;
 }
@@ -2311,11 +2311,11 @@ input[type="range"] {
 }
 
 .twin-field-legend .field-core {
-  color: #8df7ff;
+  color: #22d3ee;
 }
 
 .twin-field-legend .field-return {
-  color: #a78bfa;
+  color: #8b5cf6;
 }
 
 .twin-field-legend .field-volume {

@@ -97,12 +97,12 @@ function makeStreamline(seed: THREE.Vector3, halfSpacing: number) {
 
 function makeFieldSeeds() {
   const seeds: Array<{ seed: THREE.Vector3; color: number; opacity: number }> = [
-    { seed: new THREE.Vector3(0, 0.025, 0), color: 0x8df7ff, opacity: 0.95 },
+    { seed: new THREE.Vector3(0, 0.025, 0), color: 0x0e7490, opacity: 0.95 },
   ];
   const families = [
-    { rho: 0.24, color: 0x4ee8ff, opacity: 0.82, count: 6 },
-    { rho: 0.47, color: 0x38bdf8, opacity: 0.7, count: 8 },
-    { rho: 0.7, color: 0xa78bfa, opacity: 0.58, count: 8 },
+    { rho: 0.24, color: 0x0891b2, opacity: 0.84, count: 6 },
+    { rho: 0.47, color: 0x0284c7, opacity: 0.72, count: 8 },
+    { rho: 0.7, color: 0x7c3aed, opacity: 0.62, count: 8 },
   ];
 
   families.forEach((family) => {
@@ -319,8 +319,8 @@ export function FieldScene({
     const mount = mountRef.current;
     if (!mount) return;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x07090d);
-    scene.fog = new THREE.FogExp2(0x07090d, 0.055);
+    scene.background = new THREE.Color(0xffffff);
+    scene.fog = new THREE.FogExp2(0xffffff, 0.045);
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 60);
     camera.position.set(6.5, 3.55, 7.4);
@@ -343,8 +343,7 @@ export function FieldScene({
     orbit.maxDistance = 13;
     orbit.minPolarAngle = 0.2;
     orbit.maxPolarAngle = Math.PI / 2.03;
-    orbit.autoRotate = true;
-    orbit.autoRotateSpeed = 0.34;
+    orbit.autoRotate = false;
     orbit.target.set(0.25, -0.15, 0);
     orbitRef.current = orbit;
 
@@ -395,7 +394,7 @@ export function FieldScene({
 
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(22, 15),
-      new THREE.MeshStandardMaterial({ color: 0x111316, roughness: 0.96, metalness: 0.03 }),
+      new THREE.MeshStandardMaterial({ color: 0xf3f5f7, roughness: 0.96, metalness: 0.03 }),
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -1.45;
@@ -457,7 +456,7 @@ export function FieldScene({
         transparent: true,
         opacity: 0.055,
         side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
         depthWrite: false,
       }),
     );
@@ -553,7 +552,7 @@ export function FieldScene({
             color: record.color,
             transparent: true,
             opacity: record.opacity,
-            blending: THREE.AdditiveBlending,
+            blending: THREE.NormalBlending,
             depthWrite: false,
           }),
         );
@@ -564,10 +563,10 @@ export function FieldScene({
           const particle = new THREE.Mesh(
             new THREE.SphereGeometry(lineIndex === 0 ? 0.045 : 0.031, 10, 10),
             new THREE.MeshBasicMaterial({
-              color: lineIndex === 0 ? 0xffffff : record.color,
+              color: lineIndex === 0 ? 0x0f766e : record.color,
               transparent: true,
               opacity: 0.94,
-              blending: THREE.AdditiveBlending,
+              blending: THREE.NormalBlending,
               depthWrite: false,
             }),
           );
