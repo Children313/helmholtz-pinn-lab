@@ -242,16 +242,18 @@ function drawDimensionLabel(canvas: HTMLCanvasElement, dMm: number) {
   const context = canvas.getContext("2d");
   if (!context) return;
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "rgba(4, 13, 19, 0.84)";
-  context.strokeStyle = "rgba(94, 234, 212, 0.85)";
+  context.strokeStyle = "rgba(22, 104, 168, 0.92)";
   context.lineWidth = 3;
   context.beginPath();
   context.roundRect(8, 8, 496, 112, 18);
-  context.fill();
   context.stroke();
-  context.fillStyle = "#d9fffb";
   context.font = "700 48px monospace";
   context.textAlign = "center";
+  context.lineJoin = "round";
+  context.lineWidth = 10;
+  context.strokeStyle = "rgba(255, 255, 255, 0.94)";
+  context.strokeText(`D = ${dMm.toFixed(0)} mm`, 256, 78);
+  context.fillStyle = "#0b4f84";
   context.fillText(`D = ${dMm.toFixed(0)} mm`, 256, 78);
 }
 
@@ -464,11 +466,11 @@ export function FieldScene({
     uniformityVolumeRef.current = uniformityVolume;
     scene.add(uniformityVolume);
 
-    const dimensionMaterial = new THREE.LineBasicMaterial({ color: 0x5eead4, transparent: true, opacity: 0.9 });
+    const dimensionMaterial = new THREE.LineBasicMaterial({ color: 0x1668a8, transparent: true, opacity: 0.9 });
     const dimensionLine = new THREE.Line(new THREE.BufferGeometry(), dimensionMaterial);
     dimensionLineRef.current = dimensionLine;
     scene.add(dimensionLine);
-    const tickMaterial = new THREE.MeshBasicMaterial({ color: 0x5eead4 });
+    const tickMaterial = new THREE.MeshBasicMaterial({ color: 0x1668a8 });
     const ticks = [
       createBox([0.025, 0.32, 0.025], [0, -1.02, 1.12], tickMaterial, false),
       createBox([0.025, 0.32, 0.025], [0, -1.02, 1.12], tickMaterial, false),

@@ -2179,10 +2179,9 @@ input[type="range"] {
 .twin-view-tools,
 .twin-field-legend,
 .twin-control-dock {
-  border: 1px solid rgba(183, 205, 220, 0.22);
-  background: rgba(7, 12, 17, 0.82);
-  color: #eef7fb;
-  backdrop-filter: blur(12px);
+  border: 0;
+  background: transparent;
+  color: #0b4f84;
 }
 
 .twin-identity {
@@ -2190,13 +2189,13 @@ input[type="range"] {
   align-items: center;
   gap: 9px;
   min-height: 52px;
-  padding: 8px 12px;
-  border-left: 3px solid #2dd4bf;
+  padding: 5px 0 5px 12px;
+  border-left: 3px solid #1670ad;
 }
 
 .twin-identity > svg {
   flex: 0 0 auto;
-  color: #5eead4;
+  color: #1670ad;
 }
 
 .twin-identity span {
@@ -2205,14 +2204,14 @@ input[type="range"] {
 }
 
 .twin-identity strong {
-  color: #f8fafc;
+  color: #0b3557;
   font-family: var(--font-medium);
   font-size: 13px;
   letter-spacing: 0;
 }
 
 .twin-identity em {
-  color: #a9bac7;
+  color: #5c7488;
   font-family: var(--font-small);
   font-size: 10px;
   font-style: normal;
@@ -2228,7 +2227,7 @@ input[type="range"] {
   align-content: center;
   min-width: 118px;
   padding: 7px 12px;
-  border-left: 1px solid rgba(183, 205, 220, 0.16);
+  border-left: 1px solid #a9c9df;
 }
 
 .twin-live-readouts > span:first-child {
@@ -2236,7 +2235,7 @@ input[type="range"] {
 }
 
 .twin-live-readouts em {
-  color: #8fa4b4;
+  color: #668096;
   font-family: var(--font-small);
   font-size: 9px;
   font-style: normal;
@@ -2244,14 +2243,14 @@ input[type="range"] {
 
 .twin-live-readouts strong {
   margin-top: 3px;
-  color: #f8fafc;
+  color: #0b4f84;
   font-family: var(--font-medium);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 .twin-live-readouts > span.linked strong {
-  color: #5eead4;
+  color: #087f78;
 }
 
 .twin-view-tools {
@@ -2260,8 +2259,8 @@ input[type="range"] {
   top: 88px;
   right: 18px;
   display: grid;
-  gap: 1px;
-  padding: 4px;
+  gap: 7px;
+  padding: 0;
 }
 
 .twin-view-tools button {
@@ -2270,16 +2269,17 @@ input[type="range"] {
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 0;
+  border: 1px solid #a4c6dd;
   border-radius: 5px;
-  background: transparent;
-  color: #c5d4df;
+  background: rgba(255, 255, 255, 0.72);
+  color: #0b5e96;
   cursor: pointer;
 }
 
 .twin-view-tools button:hover {
-  background: rgba(45, 212, 191, 0.13);
-  color: #5eead4;
+  border-color: #1670ad;
+  background: #edf6fc;
+  color: #0b4f84;
 }
 
 .twin-field-legend {
@@ -2294,7 +2294,7 @@ input[type="range"] {
 }
 
 .twin-field-legend span {
-  color: #c8d7e1;
+  color: #315b78;
   font-family: var(--font-small);
   font-size: 9px;
   font-weight: 800;
@@ -2334,15 +2334,19 @@ input[type="range"] {
   align-items: center;
   min-height: 98px;
   padding: 11px;
+  border-top: 1px solid #9ec2da;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 -14px 30px rgba(20, 83, 125, 0.055);
+  backdrop-filter: blur(8px);
 }
 
 .twin-source-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
-  padding: 4px;
-  border: 1px solid rgba(164, 186, 201, 0.18);
-  background: rgba(255, 255, 255, 0.035);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .twin-source-switch button,
@@ -2355,7 +2359,7 @@ input[type="range"] {
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
-  color: #aebfcb;
+  color: #365e78;
   font-family: var(--font-small);
   font-size: 11px;
   font-weight: 900;
@@ -2363,9 +2367,9 @@ input[type="range"] {
 }
 
 .twin-source-switch button.active {
-  border-color: rgba(94, 234, 212, 0.55);
-  background: rgba(45, 212, 191, 0.13);
-  color: #d9fffb;
+  border-color: #2a78ad;
+  background: transparent;
+  color: #0b4f84;
 }
 
 .twin-range-control {
@@ -2379,14 +2383,14 @@ input[type="range"] {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  color: #9eb0be;
+  color: #547087;
   font-family: var(--font-small);
   font-size: 10px;
   font-weight: 800;
 }
 
 .twin-range-control > span strong {
-  color: #f3f8fb;
+  color: #0b3557;
   font-family: var(--font-medium);
   font-size: 17px;
   font-variant-numeric: tabular-nums;
@@ -2395,7 +2399,7 @@ input[type="range"] {
 .twin-range-control input[type="range"] {
   height: 18px;
   margin: 0;
-  accent-color: #2dd4bf;
+  accent-color: #1670ad;
 }
 
 .twin-range-control input[type="range"]:disabled {
@@ -2406,7 +2410,7 @@ input[type="range"] {
 .twin-range-ticks {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  color: #718695;
+  color: #6c879b;
   font-family: var(--font-small);
   font-size: 8px;
 }
@@ -2427,13 +2431,14 @@ input[type="range"] {
 }
 
 .twin-spacing-presets button {
-  border-color: rgba(164, 186, 201, 0.24);
-  color: #d3dfe7;
+  border-color: #a4c6dd;
+  color: #225c84;
 }
 
 .twin-spacing-presets button:hover:not(:disabled) {
-  border-color: #5eead4;
-  color: #5eead4;
+  border-color: #1670ad;
+  background: #edf6fc;
+  color: #0b4f84;
 }
 
 .twin-spacing-presets button:disabled {
@@ -2447,22 +2452,22 @@ input[type="range"] {
   gap: 9px;
   min-width: 0;
   padding: 9px 10px;
-  border-left: 3px solid #64748b;
-  background: rgba(255, 255, 255, 0.035);
+  border-left: 3px solid #7daac8;
+  background: transparent;
 }
 
 .twin-source-status.linked {
-  border-left-color: #2dd4bf;
-  background: rgba(45, 212, 191, 0.09);
+  border-left-color: #0f8b83;
+  background: transparent;
 }
 
 .twin-source-status > svg {
   flex: 0 0 auto;
-  color: #8fa4b4;
+  color: #2d6d99;
 }
 
 .twin-source-status.linked > svg {
-  color: #5eead4;
+  color: #0f8b83;
 }
 
 .twin-source-status span {
@@ -2472,7 +2477,7 @@ input[type="range"] {
 }
 
 .twin-source-status em {
-  color: #7f94a4;
+  color: #6b879a;
   font-family: var(--font-small);
   font-size: 8px;
   font-style: normal;
@@ -2480,7 +2485,7 @@ input[type="range"] {
 }
 
 .twin-source-status strong {
-  color: #e7eff4;
+  color: #0b4f84;
   font-family: var(--font-medium);
   font-size: 11px;
   overflow-wrap: anywhere;
