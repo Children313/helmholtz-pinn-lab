@@ -295,6 +295,7 @@ function TrainingView({ navigate }: { navigate: (view: ViewKey) => void }) {
 
 function SimulationView() {
   const [dRatio, setDRatio] = React.useState(1);
+  const [probeXMm, setProbeXMm] = React.useState(0);
   const [spacingSource, setSpacingSource] = React.useState<SpacingSource>("manual");
   const [cameraSample, setCameraSample] = React.useState<SpacingSample | null>(null);
   const spacingSourceRef = React.useRef<SpacingSource>("manual");
@@ -309,7 +310,7 @@ function SimulationView() {
       const dMm = Number(sample.dMm);
       if (!Number.isFinite(dMm)) return;
       const normalized = {
-        dMm: clamp(dMm, 0.4 * radiusMm, 2.2 * radiusMm),
+        dMm: clamp(dMm, 0.5 * radiusMm, 2 * radiusMm),
         confidence: clamp(Number(sample.confidence ?? 1), 0, 1),
         timestamp: Number(sample.timestamp ?? Date.now()),
       };
@@ -344,7 +345,10 @@ function SimulationView() {
 
   const updateDRatio = (event: React.FormEvent<HTMLInputElement>) => {
     if (spacingSource !== "manual") return;
-    setDRatio(clamp(Number(event.currentTarget.value), 0.4, 2.2));
+    setDRatio(clamp(Number(event.currentTarget.value), 0.5, 2));
+  };
+  const updateProbeX = (event: React.FormEvent<HTMLInputElement>) => {
+    setProbeXMm(clamp(Number(event.currentTarget.value), -180, 180));
   };
   const selectSource = (source: SpacingSource) => {
     spacingSourceRef.current = source;
@@ -380,29 +384,53 @@ function SimulationView() {
           摄像头 D
         </button>
       </div>
-      <label className="twin-range-control" htmlFor="digital-twin-spacing">
-        <span>
-          线圈中心间距
-          <strong>{coilDistance.toFixed(0)} mm</strong>
-        </span>
-        <input
-          id="digital-twin-spacing"
-          type="range"
-          min="0.4"
-          max="2.2"
-          step="0.02"
-          value={dRatio}
-          disabled={spacingSource === "camera"}
-          onInput={updateDRatio}
-          onChange={updateDRatio}
-        />
-        <div className="twin-range-ticks" aria-hidden="true">
-          <span>40</span>
-          <span>100</span>
-          <span>160</span>
-          <span>220 mm</span>
-        </div>
-      </label>
+      <div className="twin-motion-controls">
+        <label className="twin-range-control" htmlFor="digital-twin-spacing">
+          <span>
+            右线圈中心间距 D
+            <strong>{coilDistance.toFixed(0)} mm</strong>
+          </span>
+          <input
+            id="digital-twin-spacing"
+            type="range"
+            min="0.5"
+            max="2"
+            step="0.02"
+            value={dRatio}
+            disabled={spacingSource === "camera"}
+            onInput={updateDRatio}
+            onChange={updateDRatio}
+          />
+          <div className="twin-range-ticks" aria-hidden="true">
+            <span>50</span>
+            <span>100</span>
+            <span>150</span>
+            <span>200 mm</span>
+          </div>
+        </label>
+        <label className="twin-range-control twin-probe-range" htmlFor="digital-twin-probe-x">
+          <span>
+            霍尔探头轴向位置 x
+            <strong>{probeXMm.toFixed(0)} mm</strong>
+          </span>
+          <input
+            id="digital-twin-probe-x"
+            type="range"
+            min="-180"
+            max="180"
+            step="10"
+            value={probeXMm}
+            onInput={updateProbeX}
+            onChange={updateProbeX}
+          />
+          <div className="twin-range-ticks" aria-hidden="true">
+            <span>-180</span>
+            <span>-60</span>
+            <span>60</span>
+            <span>180 mm</span>
+          </div>
+        </label>
+      </div>
       <div className="twin-spacing-presets" aria-label="标准线圈间距">
         <button type="button" disabled={spacingSource === "camera"} onClick={() => setDRatio(0.5)}>R/2</button>
         <button type="button" disabled={spacingSource === "camera"} onClick={() => setDRatio(1)}>R</button>
@@ -414,7 +442,7 @@ function SimulationView() {
           <em>{spacingSource === "manual" ? "LOCAL INPUT" : cameraLinked ? "VISION LINKED" : "VISION STANDBY"}</em>
           <strong>
             {spacingSource === "manual"
-              ? `x = ±${(coilDistance / 2).toFixed(0)} mm`
+              ? "左线圈固定 · 右线圈移动"
               : cameraSample
                 ? `置信度 ${((cameraSample.confidence ?? 0) * 100).toFixed(0)}%`
                 : "等待 D 数据"}
@@ -428,6 +456,7 @@ function SimulationView() {
     <ViewFrame eyebrow="Digital Twin Simulation" title="实验装置数字孪生与实时磁场">
       <FieldScene
         dRatio={dRatio}
+        probeXMm={probeXMm}
         radiusMm={radiusMm}
         source={spacingSource}
         cameraLinked={cameraLinked}
@@ -499,8 +528,8 @@ function SimulationView() {
           <div className="twin-system-status">
             <div>
               <span>几何模型</span>
-              <strong>R = {radiusMm} mm · x = ±D/2</strong>
-              <em>导轨、双层线圈、探针架、控制台</em>
+              <strong>R = {radiusMm} mm · D = 50–200 mm</strong>
+              <em>左线圈固定、右线圈移动、轴向霍尔探头与 XYZ 导架</em>
             </div>
             <div>
               <span>三维场引擎</span>

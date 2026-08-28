@@ -7,8 +7,10 @@ const COIL_RADIUS = 0.95;
 const FIELD_SEGMENTS = 56;
 const TRACE_STEP = 0.036;
 const TRACE_STEPS = 240;
-const MAX_X = 3.05;
+const MAX_X = 4.25;
 const MAX_RHO = 1.78;
+const FIXED_COIL_X = -1.45;
+const PROBE_ROD_LENGTH = 2.75;
 
 type FieldParticle = {
   mesh: THREE.Mesh;
@@ -33,11 +35,11 @@ function clearGroup(group: THREE.Group) {
   group.clear();
 }
 
-function fieldAt(point: THREE.Vector3, halfSpacing: number) {
+function fieldAt(point: THREE.Vector3, coilCenters: readonly [number, number]) {
   const field = new THREE.Vector3();
   const dTheta = (2 * Math.PI) / FIELD_SEGMENTS;
 
-  for (const centerX of [-halfSpacing, halfSpacing]) {
+  for (const centerX of coilCenters) {
     for (let index = 0; index < FIELD_SEGMENTS; index += 1) {
       const theta = (index + 0.5) * dTheta;
       const sourceY = COIL_RADIUS * Math.cos(theta);
@@ -68,22 +70,22 @@ function isInsideFieldVolume(point: THREE.Vector3) {
   );
 }
 
-function isNearWire(point: THREE.Vector3, halfSpacing: number) {
+function isNearWire(point: THREE.Vector3, coilCenters: readonly [number, number]) {
   const rho = Math.hypot(point.y, point.z);
-  return [-halfSpacing, halfSpacing].some(
+  return coilCenters.some(
     (centerX) => Math.abs(point.x - centerX) < 0.08 && Math.abs(rho - COIL_RADIUS) < 0.1,
   );
 }
 
-function trace(seed: THREE.Vector3, halfSpacing: number, direction: 1 | -1) {
+function trace(seed: THREE.Vector3, coilCenters: readonly [number, number], direction: 1 | -1) {
   const points: THREE.Vector3[] = [];
   let point = seed.clone();
 
   for (let index = 0; index < TRACE_STEPS; index += 1) {
-    const field = fieldAt(point, halfSpacing);
+    const field = fieldAt(point, coilCenters);
     if (field.lengthSq() < 1e-8) break;
     const next = point.clone().add(field.normalize().multiplyScalar(direction * TRACE_STEP));
-    if (!isInsideFieldVolume(next) || isNearWire(next, halfSpacing)) break;
+    if (!isInsideFieldVolume(next) || isNearWire(next, coilCenters)) break;
     points.push(next);
     point = next;
   }
@@ -91,13 +93,13 @@ function trace(seed: THREE.Vector3, halfSpacing: number, direction: 1 | -1) {
   return points;
 }
 
-function makeStreamline(seed: THREE.Vector3, halfSpacing: number) {
-  return [...trace(seed, halfSpacing, -1).reverse(), seed.clone(), ...trace(seed, halfSpacing, 1)];
+function makeStreamline(seed: THREE.Vector3, coilCenters: readonly [number, number]) {
+  return [...trace(seed, coilCenters, -1).reverse(), seed.clone(), ...trace(seed, coilCenters, 1)];
 }
 
-function makeFieldSeeds() {
+function makeFieldSeeds(centerX: number) {
   const seeds: Array<{ seed: THREE.Vector3; color: number; opacity: number }> = [
-    { seed: new THREE.Vector3(0, 0.025, 0), color: 0x0e7490, opacity: 0.95 },
+    { seed: new THREE.Vector3(centerX, 0.025, 0), color: 0x0e7490, opacity: 0.95 },
   ];
   const families = [
     { rho: 0.24, color: 0x0891b2, opacity: 0.84, count: 6 },
@@ -109,7 +111,7 @@ function makeFieldSeeds() {
     for (let index = 0; index < family.count; index += 1) {
       const phi = (index / family.count) * Math.PI * 2;
       seeds.push({
-        seed: new THREE.Vector3(0, family.rho * Math.cos(phi), family.rho * Math.sin(phi)),
+        seed: new THREE.Vector3(centerX, family.rho * Math.cos(phi), family.rho * Math.sin(phi)),
         color: family.color,
         opacity: family.opacity,
       });
@@ -178,54 +180,6 @@ function createCoilAssembly(materials: {
   return assembly;
 }
 
-function createPanelTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 360;
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
-  return { canvas, texture };
-}
-
-function drawControlPanel(canvas: HTMLCanvasElement, dMm: number) {
-  const context = canvas.getContext("2d");
-  if (!context) return;
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "#d9dde1";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "#20252b";
-  context.fillRect(34, 34, 956, 292);
-  context.fillStyle = "#d8dee5";
-  context.fillRect(48, 48, 928, 264);
-  context.fillStyle = "#27313a";
-  context.font = "700 34px sans-serif";
-  context.fillText("HZDH 3D MAGNETIC FIELD LAB", 70, 92);
-
-  const readings = ["5.00", dMm.toFixed(0), "0.500"];
-  readings.forEach((reading, index) => {
-    const x = 78 + index * 300;
-    context.fillStyle = "#111518";
-    context.fillRect(x, 122, 232, 94);
-    context.shadowColor = "#ff203d";
-    context.shadowBlur = 18;
-    context.fillStyle = "#ff2945";
-    context.font = "700 58px monospace";
-    context.textAlign = "center";
-    context.fillText(reading, x + 116, 190);
-    context.shadowBlur = 0;
-    context.fillStyle = "#4b5563";
-    context.font = "700 24px sans-serif";
-    context.fillText(index === 0 ? "mA" : index === 1 ? "D / mm" : "A", x + 116, 256);
-  });
-  context.textAlign = "left";
-  context.fillStyle = "#6b7280";
-  context.font = "600 20px sans-serif";
-  context.fillText("CURRENT", 92, 292);
-  context.fillText("SPACING", 392, 292);
-  context.fillText("COIL", 712, 292);
-}
-
 function createDimensionTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
@@ -259,21 +213,23 @@ function drawDimensionLabel(canvas: HTMLCanvasElement, dMm: number) {
 
 function createScaleMarks() {
   const positions: number[] = [];
-  for (let index = -34; index <= 34; index += 1) {
-    const x = index / 10;
-    const longTick = index % 5 === 0;
-    positions.push(x, -0.82, 0.93, x, -0.82, longTick ? 0.76 : 0.84);
+  for (let index = 0; index <= 60; index += 1) {
+    const x = -3.78 + index * 0.052;
+    const longTick = index % 10 === 0;
+    const mediumTick = index % 5 === 0;
+    positions.push(x, -1.08, 1.246, x, longTick ? -1.3 : mediumTick ? -1.25 : -1.2, 1.246);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   return new THREE.LineSegments(
     geometry,
-    new THREE.LineBasicMaterial({ color: 0xe5edf4, transparent: true, opacity: 0.82 }),
+    new THREE.LineBasicMaterial({ color: 0xf7fbff, transparent: true, opacity: 0.96 }),
   );
 }
 
 export function FieldScene({
   dRatio,
+  probeXMm,
   radiusMm,
   source,
   cameraLinked,
@@ -281,6 +237,7 @@ export function FieldScene({
   className = "",
 }: {
   dRatio: number;
+  probeXMm: number;
   radiusMm: number;
   source: "manual" | "camera";
   cameraLinked: boolean;
@@ -292,15 +249,18 @@ export function FieldScene({
   const cameraRef = React.useRef<THREE.PerspectiveCamera | null>(null);
   const orbitRef = React.useRef<OrbitControls | null>(null);
   const coilGroupsRef = React.useRef<THREE.Group[]>([]);
-  const targetHalfRef = React.useRef(dRatio / 2);
+  const targetMovingCoilRef = React.useRef(FIXED_COIL_X + dRatio);
+  const probeCarriageRef = React.useRef<THREE.Group | null>(null);
+  const targetProbeCarriageRef = React.useRef(
+    FIXED_COIL_X + dRatio / 2 + probeXMm / radiusMm + PROBE_ROD_LENGTH,
+  );
   const fieldGroupRef = React.useRef<THREE.Group | null>(null);
   const particlesRef = React.useRef<FieldParticle[]>([]);
   const dimensionLineRef = React.useRef<THREE.Line | null>(null);
   const dimensionTicksRef = React.useRef<THREE.Mesh[]>([]);
   const dimensionCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const dimensionTextureRef = React.useRef<THREE.CanvasTexture | null>(null);
-  const panelCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const panelTextureRef = React.useRef<THREE.CanvasTexture | null>(null);
+  const dimensionSpriteRef = React.useRef<THREE.Sprite | null>(null);
   const uniformityVolumeRef = React.useRef<THREE.Mesh | null>(null);
 
   const setView = React.useCallback((preset: ViewPreset) => {
@@ -308,12 +268,12 @@ export function FieldScene({
     const orbit = orbitRef.current;
     if (!camera || !orbit) return;
     const positions: Record<ViewPreset, THREE.Vector3> = {
-      perspective: new THREE.Vector3(6.5, 3.55, 7.4),
-      front: new THREE.Vector3(0.3, 1.15, 9.2),
-      top: new THREE.Vector3(0.15, 9.2, 0.01),
+      perspective: new THREE.Vector3(7.2, 3.75, 7.9),
+      front: new THREE.Vector3(0.35, 1.1, 10.1),
+      top: new THREE.Vector3(0.35, 10.2, 0.01),
     };
     camera.position.copy(positions[preset]);
-    orbit.target.set(0.25, -0.15, 0);
+    orbit.target.set(0.15, -0.18, 0);
     orbit.update();
   }, []);
 
@@ -325,7 +285,7 @@ export function FieldScene({
     scene.fog = new THREE.FogExp2(0xffffff, 0.045);
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 60);
-    camera.position.set(6.5, 3.55, 7.4);
+    camera.position.set(7.2, 3.75, 7.9);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -346,7 +306,7 @@ export function FieldScene({
     orbit.minPolarAngle = 0.2;
     orbit.maxPolarAngle = Math.PI / 2.03;
     orbit.autoRotate = false;
-    orbit.target.set(0.25, -0.15, 0);
+    orbit.target.set(0.15, -0.18, 0);
     orbitRef.current = orbit;
 
     scene.add(new THREE.HemisphereLight(0xc7e8ff, 0x20130d, 1.75));
@@ -369,6 +329,16 @@ export function FieldScene({
     const black = new THREE.MeshStandardMaterial({ color: 0x111820, roughness: 0.58, metalness: 0.42 });
     const blackSoft = new THREE.MeshStandardMaterial({ color: 0x1d2730, roughness: 0.72, metalness: 0.25 });
     const steel = new THREE.MeshStandardMaterial({ color: 0x9aa5ae, roughness: 0.23, metalness: 0.9 });
+    const baseBlue = new THREE.MeshStandardMaterial({ color: 0x176f9f, roughness: 0.54, metalness: 0.3 });
+    const guideOrange = new THREE.MeshStandardMaterial({ color: 0xd8912d, roughness: 0.42, metalness: 0.46 });
+    const sliderGreen = new THREE.MeshStandardMaterial({ color: 0x357d67, roughness: 0.5, metalness: 0.34 });
+    const sensorGold = new THREE.MeshStandardMaterial({
+      color: 0xf1b83b,
+      emissive: 0x8a4d00,
+      emissiveIntensity: 0.45,
+      roughness: 0.34,
+      metalness: 0.24,
+    });
     const copper = new THREE.MeshStandardMaterial({
       color: 0xd46b2c,
       emissive: 0x4e1605,
@@ -404,47 +374,55 @@ export function FieldScene({
     scene.add(floor);
 
     const apparatus = new THREE.Group();
-    apparatus.add(createBox([7.25, 0.24, 2.45], [-0.15, -1.29, 0], blackSoft));
-    apparatus.add(createBox([6.95, 0.12, 0.93], [-0.15, -1.09, 0], black));
-    apparatus.add(createBox([7.05, 0.13, 0.22], [-0.15, -0.93, 0.94], black));
-    apparatus.add(createRail(6.82, 0.045, [-0.15, -0.91, -0.57], steel));
-    apparatus.add(createRail(6.82, 0.045, [-0.15, -0.91, 0.57], steel));
+    apparatus.add(createBox([8.45, 0.3, 2.48], [0.15, -1.28, 0], baseBlue));
+    apparatus.add(createBox([8.08, 0.07, 2.16], [0.15, -1.1, 0], blackSoft));
+    apparatus.add(createBox([3.45, 0.08, 0.25], [-2.08, -1.0, 1.08], baseBlue));
     apparatus.add(createScaleMarks());
 
-    for (const x of [-3.35, -2.25, 2.05, 3.15]) {
+    for (const x of [-3.7, -2.55, 2.95, 4]) {
       const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 18), steel);
-      screw.position.set(x, -1.15, 1.04);
+      screw.position.set(x, -1.06, 1.08);
       apparatus.add(screw);
     }
 
+    [-0.35, 0.05, 0.45].forEach((offset, index) => {
+      const port = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.055, 0.055, 0.045, 18),
+        index === 1 ? black : new THREE.MeshStandardMaterial({ color: 0xc53b32, roughness: 0.4, metalness: 0.2 }),
+      );
+      port.rotation.x = Math.PI / 2;
+      port.position.set(3.45 + offset, -1.23, 1.25);
+      apparatus.add(port);
+    });
+
     const leftCoil = createCoilAssembly({ copper, copperDark, resin, black });
     const rightCoil = createCoilAssembly({ copper, copperDark, resin, black });
-    leftCoil.position.x = -targetHalfRef.current;
-    rightCoil.position.x = targetHalfRef.current;
+    leftCoil.position.x = FIXED_COIL_X;
+    rightCoil.position.x = targetMovingCoilRef.current;
+    const lockKnob = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.14, 18), blackSoft);
+    lockKnob.position.set(0, -0.85, 0.72);
+    rightCoil.add(lockKnob);
     apparatus.add(leftCoil, rightCoil);
     coilGroupsRef.current = [leftCoil, rightCoil];
 
-    const probeCarriage = new THREE.Group();
-    probeCarriage.add(createBox([0.48, 0.18, 0.72], [0, -1.02, -0.62], black));
-    probeCarriage.add(createBox([0.18, 2.2, 0.18], [0, 0.02, -0.62], black));
-    probeCarriage.add(createBox([0.34, 0.2, 0.34], [0, 0.62, -0.35], blackSoft));
-    probeCarriage.add(createRail(5.35, 0.027, [0, 0.62, 0], steel));
-    apparatus.add(probeCarriage);
+    apparatus.add(createBox([4.25, 0.1, 0.42], [1.82, -0.94, 0.72], guideOrange));
+    apparatus.add(createRail(4.08, 0.035, [1.82, -0.83, 0.55], steel));
+    apparatus.add(createRail(4.08, 0.035, [1.82, -0.83, 0.89], steel));
+    apparatus.add(createBox([0.18, 0.09, 2.02], [0.02, -1.0, 0], steel));
+    apparatus.add(createBox([0.18, 0.09, 2.02], [3.64, -1.0, 0], steel));
 
-    const panel = createPanelTexture();
-    panelCanvasRef.current = panel.canvas;
-    panelTextureRef.current = panel.texture;
-    drawControlPanel(panel.canvas, dRatio * radiusMm);
-    panel.texture.needsUpdate = true;
-    const consoleGroup = new THREE.Group();
-    consoleGroup.add(createBox([1.82, 0.95, 1.42], [3.95, -0.83, -0.67], blackSoft));
-    const panelFace = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.62, 0.57),
-      new THREE.MeshBasicMaterial({ map: panel.texture }),
-    );
-    panelFace.position.set(3.95, -0.82, 0.048);
-    consoleGroup.add(panelFace);
-    apparatus.add(consoleGroup);
+    const probeCarriage = new THREE.Group();
+    probeCarriage.position.x = targetProbeCarriageRef.current;
+    probeCarriage.add(createBox([0.54, 0.18, 0.7], [0, -0.86, 0.72], sliderGreen));
+    probeCarriage.add(createBox([0.16, 2.08, 0.16], [0, 0.03, 0.72], steel));
+    probeCarriage.add(createBox([0.36, 0.24, 0.34], [0, 0, 0.47], blackSoft));
+    probeCarriage.add(createBox([0.16, 0.16, 1.48], [0, 0, 0.02], steel));
+    probeCarriage.add(createRail(PROBE_ROD_LENGTH, 0.035, [-PROBE_ROD_LENGTH / 2, 0, 0], guideOrange));
+    probeCarriage.add(createBox([0.17, 0.09, 0.13], [-PROBE_ROD_LENGTH - 0.05, 0, 0], sensorGold));
+    const sensorStem = createBox([0.12, 0.19, 0.08], [-PROBE_ROD_LENGTH - 0.05, 0.11, 0], black, false);
+    probeCarriage.add(sensorStem);
+    apparatus.add(probeCarriage);
+    probeCarriageRef.current = probeCarriage;
     scene.add(apparatus);
 
     const fieldGroup = new THREE.Group();
@@ -478,16 +456,18 @@ export function FieldScene({
     dimensionTicksRef.current = ticks;
     scene.add(...ticks);
     const dimension = createDimensionTexture();
-    dimension.sprite.position.set(0, -0.69, 1.18);
+    dimension.sprite.position.set(FIXED_COIL_X + dRatio / 2, -0.69, 1.18);
     dimension.sprite.renderOrder = 20;
     dimensionCanvasRef.current = dimension.canvas;
     dimensionTextureRef.current = dimension.texture;
+    dimensionSpriteRef.current = dimension.sprite;
     scene.add(dimension.sprite);
 
     const resize = () => {
       const width = Math.max(1, mount.clientWidth);
       const height = Math.max(1, mount.clientHeight);
       camera.aspect = width / height;
+      camera.fov = width <= 720 ? 58 : 38;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
     };
@@ -500,10 +480,18 @@ export function FieldScene({
     const animate = (time: number) => {
       const delta = Math.min(0.05, (time - lastTime) / 1000);
       lastTime = time;
-      coilGroupsRef.current.forEach((coil, index) => {
-        const target = index === 0 ? -targetHalfRef.current : targetHalfRef.current;
-        coil.position.x = THREE.MathUtils.damp(coil.position.x, target, 9, delta);
-      });
+      const movingCoil = coilGroupsRef.current[1];
+      if (movingCoil) {
+        movingCoil.position.x = THREE.MathUtils.damp(movingCoil.position.x, targetMovingCoilRef.current, 9, delta);
+      }
+      if (probeCarriageRef.current) {
+        probeCarriageRef.current.position.x = THREE.MathUtils.damp(
+          probeCarriageRef.current.position.x,
+          targetProbeCarriageRef.current,
+          9,
+          delta,
+        );
+      }
       particlesRef.current.forEach((particle) => {
         const progress = (time * 0.00012 * particle.speed + particle.phase) % 1;
         particle.mesh.position.copy(particle.curve.getPointAt(progress));
@@ -522,7 +510,6 @@ export function FieldScene({
       orbit.dispose();
       clearGroup(fieldGroup);
       particlesRef.current = [];
-      panel.texture.dispose();
       dimension.texture.dispose();
       scene.traverse(disposeObject);
       renderer.dispose();
@@ -532,20 +519,25 @@ export function FieldScene({
       orbitRef.current = null;
       fieldGroupRef.current = null;
       coilGroupsRef.current = [];
+      probeCarriageRef.current = null;
+      dimensionSpriteRef.current = null;
     };
   }, [radiusMm]);
 
   React.useEffect(() => {
-    const halfSpacing = dRatio / 2;
+    const movingCoilX = FIXED_COIL_X + dRatio;
+    const pairCenterX = (FIXED_COIL_X + movingCoilX) / 2;
+    const coilCenters: [number, number] = [FIXED_COIL_X, movingCoilX];
     const dMm = dRatio * radiusMm;
-    targetHalfRef.current = halfSpacing;
+    targetMovingCoilRef.current = movingCoilX;
+    targetProbeCarriageRef.current = pairCenterX + probeXMm / radiusMm + PROBE_ROD_LENGTH;
 
     const fieldGroup = fieldGroupRef.current;
     if (fieldGroup) {
       clearGroup(fieldGroup);
       particlesRef.current = [];
-      makeFieldSeeds().forEach((record, lineIndex) => {
-        const points = makeStreamline(record.seed, halfSpacing);
+      makeFieldSeeds(pairCenterX).forEach((record, lineIndex) => {
+        const points = makeStreamline(record.seed, coilCenters);
         if (points.length < 5) return;
         const curve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.35);
         const tube = new THREE.Mesh(
@@ -587,22 +579,20 @@ export function FieldScene({
     if (line) {
       line.geometry.dispose();
       line.geometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-halfSpacing, -1.02, 1.12),
-        new THREE.Vector3(halfSpacing, -1.02, 1.12),
+        new THREE.Vector3(FIXED_COIL_X, -1.02, 1.12),
+        new THREE.Vector3(movingCoilX, -1.02, 1.12),
       ]);
     }
     dimensionTicksRef.current.forEach((tick, index) => {
-      tick.position.x = index === 0 ? -halfSpacing : halfSpacing;
+      tick.position.x = index === 0 ? FIXED_COIL_X : movingCoilX;
     });
+    if (dimensionSpriteRef.current) dimensionSpriteRef.current.position.x = pairCenterX;
     if (dimensionCanvasRef.current && dimensionTextureRef.current) {
       drawDimensionLabel(dimensionCanvasRef.current, dMm);
       dimensionTextureRef.current.needsUpdate = true;
     }
-    if (panelCanvasRef.current && panelTextureRef.current) {
-      drawControlPanel(panelCanvasRef.current, dMm);
-      panelTextureRef.current.needsUpdate = true;
-    }
     if (uniformityVolumeRef.current) {
+      uniformityVolumeRef.current.position.x = pairCenterX;
       const helmholtzQuality = Math.exp(-Math.pow((dRatio - 1) / 0.38, 2));
       uniformityVolumeRef.current.scale.set(
         0.62 + helmholtzQuality * 0.34,
@@ -612,7 +602,7 @@ export function FieldScene({
       const material = uniformityVolumeRef.current.material as THREE.MeshBasicMaterial;
       material.opacity = 0.025 + helmholtzQuality * 0.075;
     }
-  }, [dRatio, radiusMm]);
+  }, [dRatio, probeXMm, radiusMm]);
 
   const toggleFullscreen = () => {
     const stage = stageRef.current;
@@ -641,8 +631,12 @@ export function FieldScene({
             <strong>{(dRatio * radiusMm).toFixed(0)} mm</strong>
           </span>
           <span>
-            <em>归一化</em>
-            <strong>{dRatio.toFixed(2)} R</strong>
+            <em>霍尔探头 x</em>
+            <strong>{probeXMm.toFixed(0)} mm</strong>
+          </span>
+          <span>
+            <em>线圈运动</em>
+            <strong>L FIXED · R MOVING</strong>
           </span>
           <span className={source === "camera" && cameraLinked ? "linked" : ""}>
             <em>数据源</em>

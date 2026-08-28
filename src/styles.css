@@ -2286,7 +2286,7 @@ input[type="range"] {
   position: absolute;
   z-index: 3;
   right: 18px;
-  bottom: 132px;
+  bottom: 166px;
   display: flex;
   gap: 13px;
   padding: 8px 10px;
@@ -2349,6 +2349,12 @@ input[type="range"] {
   background: transparent;
 }
 
+.twin-motion-controls {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
 .twin-source-switch button,
 .twin-spacing-presets button {
   display: inline-flex;
@@ -2400,6 +2406,10 @@ input[type="range"] {
   height: 18px;
   margin: 0;
   accent-color: #1670ad;
+}
+
+.twin-probe-range input[type="range"] {
+  accent-color: #c77816;
 }
 
 .twin-range-control input[type="range"]:disabled {
@@ -4352,7 +4362,8 @@ footer {
     border-left: 0;
   }
 
-  .twin-live-readouts > span:nth-child(2) {
+  .twin-live-readouts > span:nth-child(3),
+  .twin-live-readouts > span:nth-child(4) {
     display: none;
   }
 

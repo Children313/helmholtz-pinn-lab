@@ -58,7 +58,7 @@ window.postMessage(
 );
 ```
 
-`dMm` 为必填毫米值，系统会限制在当前装置的 `40–220 mm` 行程内；`confidence` 和 `timestamp` 可选。
+`dMm` 为必填毫米值，系统会限制在实验讲义规定的 `50–200 mm` 行程内；`confidence` 和 `timestamp` 可选。数字孪生中左线圈固定，摄像头间距只驱动右线圈沿底板导轨移动。
 
 ## 部署到 GitHub Pages
 
