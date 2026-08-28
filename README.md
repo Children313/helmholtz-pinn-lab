@@ -23,6 +23,43 @@ npm run build
 
 构建产物位于 `dist/`。
 
+生成可直接离线打开、资源全部内嵌的单文件版本：
+
+```bash
+npm run build:single
+```
+
+输出文件为 `dist/helmholtz-pinn-lab-single.html`。
+
+## 数字孪生间距接口
+
+三维仿真页将线圈中心间距 `D` 作为统一状态。选择“摄像头 D”后，外部视觉测距程序可通过以下任一方式提交测量值：
+
+```js
+window.HelmholtzTwin.setSpacing({
+  dMm: 100,
+  confidence: 0.97,
+  timestamp: Date.now(),
+});
+```
+
+也可以发送浏览器事件或跨窗口消息：
+
+```js
+window.dispatchEvent(
+  new CustomEvent("helmholtz:spacing", {
+    detail: { dMm: 100, confidence: 0.97, timestamp: Date.now() },
+  }),
+);
+
+window.postMessage(
+  { type: "helmholtz-spacing", dMm: 100, confidence: 0.97, timestamp: Date.now() },
+  "*",
+);
+```
+
+`dMm` 为必填毫米值，系统会限制在当前装置的 `40–220 mm` 行程内；`confidence` 和 `timestamp` 可选。
+
 ## 部署到 GitHub Pages
 
 项目已包含 GitHub Actions 工作流：

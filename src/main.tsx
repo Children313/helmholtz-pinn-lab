@@ -7,6 +7,8 @@ import {
   BrainCircuit,
   BookOpen,
   Boxes,
+  Cable,
+  Camera,
   ChartSpline,
   Database,
   Download,
@@ -19,6 +21,7 @@ import {
   Play,
   Plus,
   RadioTower,
+  Ruler,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -35,6 +38,20 @@ import "./styles.css";
 
 type WebData = typeof webData;
 type ViewKey = "home" | "workbench" | "training" | "simulation" | "evidence" | "experiment" | "reproduce";
+type SpacingSource = "manual" | "camera";
+type SpacingSample = {
+  dMm: number;
+  confidence?: number;
+  timestamp?: number;
+};
+
+declare global {
+  interface Window {
+    HelmholtzTwin?: {
+      setSpacing: (sample: SpacingSample) => void;
+    };
+  }
+}
 
 const data = webData as WebData;
 const embeddedAssets = (globalThis as typeof globalThis & { __HELMHOLTZ_ASSETS__?: Record<string, string> })
@@ -278,18 +295,146 @@ function TrainingView({ navigate }: { navigate: (view: ViewKey) => void }) {
 
 function SimulationView() {
   const [dRatio, setDRatio] = React.useState(1);
+  const [spacingSource, setSpacingSource] = React.useState<SpacingSource>("manual");
+  const [cameraSample, setCameraSample] = React.useState<SpacingSample | null>(null);
+  const spacingSourceRef = React.useRef<SpacingSource>("manual");
+  const radiusMm = data.meta.radiusMm;
+
+  React.useEffect(() => {
+    spacingSourceRef.current = spacingSource;
+  }, [spacingSource]);
+
+  const acceptSpacingSample = React.useCallback(
+    (sample: SpacingSample) => {
+      const dMm = Number(sample.dMm);
+      if (!Number.isFinite(dMm)) return;
+      const normalized = {
+        dMm: clamp(dMm, 0.4 * radiusMm, 2.2 * radiusMm),
+        confidence: clamp(Number(sample.confidence ?? 1), 0, 1),
+        timestamp: Number(sample.timestamp ?? Date.now()),
+      };
+      setCameraSample(normalized);
+      if (spacingSourceRef.current === "camera") {
+        setDRatio(normalized.dMm / radiusMm);
+      }
+    },
+    [radiusMm],
+  );
+
+  React.useEffect(() => {
+    const previousApi = window.HelmholtzTwin;
+    window.HelmholtzTwin = { setSpacing: acceptSpacingSample };
+    const handleSpacingEvent = (event: Event) => {
+      acceptSpacingSample((event as CustomEvent<SpacingSample>).detail);
+    };
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "helmholtz-spacing") {
+        acceptSpacingSample(event.data as SpacingSample);
+      }
+    };
+    window.addEventListener("helmholtz:spacing", handleSpacingEvent);
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("helmholtz:spacing", handleSpacingEvent);
+      window.removeEventListener("message", handleMessage);
+      if (previousApi) window.HelmholtzTwin = previousApi;
+      else delete window.HelmholtzTwin;
+    };
+  }, [acceptSpacingSample]);
+
   const updateDRatio = (event: React.FormEvent<HTMLInputElement>) => {
+    if (spacingSource !== "manual") return;
     setDRatio(clamp(Number(event.currentTarget.value), 0.4, 2.2));
   };
+  const selectSource = (source: SpacingSource) => {
+    spacingSourceRef.current = source;
+    setSpacingSource(source);
+    if (source === "camera" && cameraSample) {
+      setDRatio(cameraSample.dMm / radiusMm);
+    }
+  };
   const exp = activeExperiment(dRatio);
-  const axisCurve = makeAxisCurve(dRatio, data.parametric.calibratedCurrentA, data.meta.radiusMm);
+  const axisCurve = makeAxisCurve(dRatio, data.parametric.calibratedCurrentA, radiusMm);
   const expPoints = data.axis.xMm.map((x, index) => ({ x, y: exp.values[index] }));
   const nearestIsHeldOut = Math.abs(exp.d - 1) < 0.01;
-  const coilDistance = dRatio * data.meta.radiusMm;
+  const coilDistance = dRatio * radiusMm;
+  const cameraLinked = spacingSource === "camera" && cameraSample !== null;
+
+  const twinControls = (
+    <div className="twin-control-dock">
+      <div className="twin-source-switch" aria-label="间距数据源">
+        <button
+          type="button"
+          className={spacingSource === "manual" ? "active" : ""}
+          onClick={() => selectSource("manual")}
+        >
+          <Ruler size={15} />
+          手动控制
+        </button>
+        <button
+          type="button"
+          className={spacingSource === "camera" ? "active" : ""}
+          onClick={() => selectSource("camera")}
+        >
+          <Camera size={15} />
+          摄像头 D
+        </button>
+      </div>
+      <label className="twin-range-control" htmlFor="digital-twin-spacing">
+        <span>
+          线圈中心间距
+          <strong>{coilDistance.toFixed(0)} mm</strong>
+        </span>
+        <input
+          id="digital-twin-spacing"
+          type="range"
+          min="0.4"
+          max="2.2"
+          step="0.02"
+          value={dRatio}
+          disabled={spacingSource === "camera"}
+          onInput={updateDRatio}
+          onChange={updateDRatio}
+        />
+        <div className="twin-range-ticks" aria-hidden="true">
+          <span>40</span>
+          <span>100</span>
+          <span>160</span>
+          <span>220 mm</span>
+        </div>
+      </label>
+      <div className="twin-spacing-presets" aria-label="标准线圈间距">
+        <button type="button" disabled={spacingSource === "camera"} onClick={() => setDRatio(0.5)}>R/2</button>
+        <button type="button" disabled={spacingSource === "camera"} onClick={() => setDRatio(1)}>R</button>
+        <button type="button" disabled={spacingSource === "camera"} onClick={() => setDRatio(2)}>2R</button>
+      </div>
+      <div className={`twin-source-status ${cameraLinked ? "linked" : ""}`}>
+        {spacingSource === "manual" ? <Ruler size={17} /> : <RadioTower size={17} />}
+        <span>
+          <em>{spacingSource === "manual" ? "LOCAL INPUT" : cameraLinked ? "VISION LINKED" : "VISION STANDBY"}</em>
+          <strong>
+            {spacingSource === "manual"
+              ? `x = ±${(coilDistance / 2).toFixed(0)} mm`
+              : cameraSample
+                ? `置信度 ${((cameraSample.confidence ?? 0) * 100).toFixed(0)}%`
+                : "等待 D 数据"}
+          </strong>
+        </span>
+      </div>
+    </div>
+  );
 
   return (
-    <ViewFrame eyebrow="Simulation Module" title="线圈间距扫描与三维场结构">
-      <div className="metrics-row compact-metrics" aria-label="关键指标">
+    <ViewFrame eyebrow="Digital Twin Simulation" title="实验装置数字孪生与实时磁场">
+      <FieldScene
+        dRatio={dRatio}
+        radiusMm={radiusMm}
+        source={spacingSource}
+        cameraLinked={cameraLinked}
+        controls={twinControls}
+      />
+
+      <div className="metrics-row compact-metrics twin-metrics" aria-label="关键指标">
         <MetricTile
           label="亥姆霍兹轴线误差"
           value={data.meta.metrics.helmAxisMeanErr.toFixed(3)}
@@ -315,70 +460,11 @@ function SimulationView() {
         />
       </div>
 
-      <div className="bench-grid module-surface">
-        <div className="control-panel">
-          <div className="panel-heading">
-            <SlidersHorizontal size={18} />
-            <h2>线圈间距控制</h2>
-          </div>
-          <label className="range-label" htmlFor="spacing">
-            <span>d/R</span>
-            <strong>{dRatio.toFixed(2)}</strong>
-          </label>
-          <input
-            id="spacing"
-            type="range"
-            min="0.4"
-            max="2.2"
-            step="0.02"
-            value={dRatio}
-            onInput={updateDRatio}
-            onChange={updateDRatio}
-          />
-          <div className="range-ticks" aria-hidden="true">
-            <span>0.4R</span>
-            <span>R/2</span>
-            <span>R</span>
-            <span>2R</span>
-            <span>2.2R</span>
-          </div>
-          <div className="spacing-actions" aria-label="线圈间距快捷控制">
-            <button type="button" onClick={() => setDRatio((value) => clamp(value - 0.1, 0.4, 2.2))}>
-              <Minus size={15} />
-            </button>
-            <button type="button" onClick={() => setDRatio(0.5)}>
-              R/2
-            </button>
-            <button type="button" onClick={() => setDRatio(1)}>
-              R
-            </button>
-            <button type="button" onClick={() => setDRatio(2)}>
-              2R
-            </button>
-            <button type="button" onClick={() => setDRatio((value) => clamp(value + 0.1, 0.4, 2.2))}>
-              <Plus size={15} />
-            </button>
-          </div>
-          <div className="readouts">
-            <div>
-              <span>线圈中心位置</span>
-              <strong>x = ±{(coilDistance / 2).toFixed(0)} mm</strong>
-            </div>
-            <div>
-              <span>最近实验锚点</span>
-              <strong className={nearestIsHeldOut ? "held-out" : ""}>{exp.label}</strong>
-            </div>
-          </div>
-          <div className="boundary-note">
-            <ShieldCheck size={18} />
-            <p>定量结论限定在轴线；三维图用于展示物理场结构与参数变化趋势。</p>
-          </div>
-        </div>
-
+      <div className="twin-analysis-grid module-surface">
         <AxisChart
-          className="axis-card"
+          className="axis-card twin-axis-card"
           title="轴线 Bx(x) 参考曲线"
-          subtitle="解析曲线随 d/R 变化，散点显示最接近的实测配置。"
+          subtitle={`当前 D=${coilDistance.toFixed(0)} mm；散点为最近的${nearestIsHeldOut ? "独立验证" : "训练"}配置。`}
           xLabel="x (mm)"
           yLabel="B (mT)"
           series={[
@@ -402,16 +488,43 @@ function SimulationView() {
           ]}
           yDomain={[0, 3.05]}
         />
-
-        <FieldScene dRatio={dRatio} className="scene-card" />
-      </div>
-
-      <div className="iframe-panel module-panel">
-        <div className="panel-heading">
-          <ChartSpline size={18} />
-          <h3>参数化 PINN 高保真滑块</h3>
-        </div>
-        <iframe title="Parametric PINN slider" src={assetPath("interactive/param_slider.html")} />
+        <section className="twin-integration-panel">
+          <div className="panel-heading">
+            <Cable size={18} />
+            <div>
+              <h3>装置映射与数据接口</h3>
+              <p className="panel-subtitle">实物几何、数值场与外部视觉测距使用同一间距变量。</p>
+            </div>
+          </div>
+          <div className="twin-system-status">
+            <div>
+              <span>几何模型</span>
+              <strong>R = {radiusMm} mm · x = ±D/2</strong>
+              <em>导轨、双层线圈、探针架、控制台</em>
+            </div>
+            <div>
+              <span>三维场引擎</span>
+              <strong>Biot–Savart 实时求迹</strong>
+              <em>轴线使用实验锚点与参数化模型校核</em>
+            </div>
+            <div className={cameraLinked ? "linked" : ""}>
+              <span>摄像头接口</span>
+              <strong>{cameraLinked ? `${cameraSample?.dMm.toFixed(1)} mm 已接收` : "External D API ready"}</strong>
+              <em>dMm · confidence · timestamp</em>
+            </div>
+          </div>
+          <figure className="twin-reference-photo">
+            <img src={assetPath("assets/experiment_apparatus_reference.jpg")} alt="亥姆霍兹线圈实验装置实物参考" />
+            <figcaption>
+              <span>实物参考</span>
+              <strong>{exp.label}</strong>
+            </figcaption>
+          </figure>
+          <div className="boundary-note twin-boundary-note">
+            <ShieldCheck size={18} />
+            <p>三维流线用于装置联动教学演示；定量误差仍以轴线实验数据与独立验证为准。</p>
+          </div>
+        </section>
       </div>
     </ViewFrame>
   );
